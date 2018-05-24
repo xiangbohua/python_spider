@@ -3,7 +3,7 @@
 
 import urllib.request
 from bs4 import BeautifulSoup
-
+import pymysql
 
 
 def getHtmlAsSoup(url):
