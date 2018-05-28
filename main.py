@@ -8,10 +8,7 @@ from dbtool import MySQLCommand
 
 
 vip = VipMro()
-
-
-vip.test()
-
+vip.saveAllProduct()
 
 exit()
 

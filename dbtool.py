@@ -96,7 +96,7 @@ class MySQLCommand(object):
 
         except:
             self.conn.rollback()
-            print("insert failed.")
+            print("insert failed." + sql)
             raise
 
     def update(self, table, where, column_value):

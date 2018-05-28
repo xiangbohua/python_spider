@@ -36,7 +36,7 @@ class VipMro(object):
     def saveAllProduct(self):
         db = self.__getDb(True)
 
-        cate4 = db.select('select id, c_url from category where level =4 limit 1')
+        cate4 = db.select('select id, c_url from category where level =4 and processed = 0 limit 10')
         for categoryUrl in cate4:
             url = categoryUrl[1]
             id = categoryUrl[0]
@@ -50,15 +50,23 @@ class VipMro(object):
                     urls = productList['urls']
 
                     for pUrl in urls:
-                        productInfo = self.processOneProduct(pUrl)
-                        self.saveProduct(productInfo)
+                        fUrl = self.fullUrl(pUrl)
+                        try:
+                            productInfo = self.processOneProduct(fUrl)
+                            time.sleep(2)
+                            self.saveProduct(productInfo)
+                        except:
+                            newDb = self.__getDb(True)
+                            newDb.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
 
-                db = self.__getDb()
+                db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed':1})
 
             except:
-                db = self.__getDb()
+                raise
+                db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed': 2})
+
 
 
 
@@ -190,7 +198,7 @@ class VipMro(object):
         db = self.__getDb(True)
         checkExited = db.count("product", "product_code = '" + productInfo['code'] +"'")
         if checkExited > 0 :
-            print(productInfo['code'] + '已经保存')
+            print('已经存在无需保存:' + productInfo['code'])
             return
 
         imageData = []
@@ -204,14 +212,22 @@ class VipMro(object):
         db.begin()
         try:
             db.insert('product', productData)
-            db.insert('product_images', imageData)
-            db.insert('product_spec', specData)
+            if len(imageData) > 0:
+                db.insert('product_images', imageData)
+            if len(specData) > 0:
+                db.insert('product_spec', specData)
             db.commit()
-            print('成功保存数据：')
-        except:
+            print('成功保存数据:' + productInfo['code'])
+        except BaseException:
             db.rollback()
             print('插入数据失败，已回滚')
             raise
+
+
+    def redoError(self):
+        db = self.__getDb(True)
+        errors = db.select('')
+
 
     #保存一级分类
     def __saveC1(self):
