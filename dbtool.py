@@ -20,13 +20,13 @@ class MySQLCommand(object):
             self.cursor = self.conn.cursor()
         except:
             print('connect mysql error.')
+            raise
 
     def queryMysql(self, sql):
         try:
             self.cursor.execute(sql)
             row = self.cursor.fetchone()
             print(row)
-
         except:
             print(sql + ' execute failed.')
 
@@ -36,6 +36,8 @@ class MySQLCommand(object):
 
         if isinstance(column_value, (dict)):
             for col, val in column_value.items():
+                col = str(col)
+                val = str(val)
                 column += "`" + col + "`,"
                 if value == '':
                     value += '('
@@ -45,7 +47,9 @@ class MySQLCommand(object):
         elif isinstance(column_value, (list)):
             if len(column_value) > 0:
                 for col,val in column_value[0].items():
+                    col = str(col)
                     column += "`" + col + "`,"
+
             for d in column_value:
                 valueOne = ''
                 for col, val in d.items():
@@ -62,6 +66,7 @@ class MySQLCommand(object):
             self.cursor.execute(sql)
             self.conn.commit()
         except:
+            self.conn.rollback()
             print("insert failed.")
 
     def updateMysqlSN(self, table, where, column_value):

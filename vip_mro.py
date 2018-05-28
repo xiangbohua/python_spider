@@ -4,6 +4,7 @@ import time
 from tool import getHtmlAsSoup
 import re
 import string
+from dbtool import MySQLCommand
 
 class VipMro(object):
     #保存分类信息
@@ -16,20 +17,31 @@ class VipMro(object):
         self.url = 'http://www.vipmro.com'
         self.mainPage = getHtmlAsSoup(self.url)
 
-    def __fullUrl(self, subUrl):
+    def fullUrl(self, subUrl):
         return self.url + subUrl
 
     def saveAllCate(self):
         self.category1 = self.getCate1()
+        self.__saveC1()
         for c1 in self.category1:
             cateIndex = c1['cateIndex']
-            self.category2 = self.getCate2(cateIndex)
+
+            cate2 = self.getCate2(cateIndex)
+            self.__saveC2(cate2, c1['name'])
+            self.category2 += cate2
 
             for c2 in self.category2:
-                self.category3 = self.getCate3(cateIndex, c2['subCateId'])
+                cate3 = self.getCate3(cateIndex, c2['subCateId'])
+                self.__saveC3(cate3, c2['name'])
 
+                self.category3 += cate3
                 for c3 in self.category3:
-                    self.category4 = self.getCate4(c3['name'], c3['url'])
+                    cate4 = self.getCate4(c3['name'], c3['url'])
+
+                    self.__saveC4(cate4, c3['name'])
+                    self.category4 += cate4
+
+
 
 
     #获取所有一级分类
@@ -52,7 +64,7 @@ class VipMro(object):
         cate2 = []
         for sub2 in sub1Cat:
             subCateId = sub2['href'][-2:]
-            url2 = self.__fullUrl(sub2['href'])
+            url2 = self.fullUrl(sub2['href'])
             name2 = sub2.string
             cate2.append({'name':name2, 'url':url2, 'subCateId':subCateId})
         return cate2
@@ -63,7 +75,7 @@ class VipMro(object):
             "/s/c-+" + str(cateIndex) + str(subCateId) + "\d\d$"))
         cate3 = []
         for sub3 in sub2Cat:
-            url3 = self.__fullUrl(sub3['href'])
+            url3 = self.fullUrl(sub3['href'])
             name3 = sub3.string
 
             cate3.append({ 'name': name3, 'url': url3})
@@ -77,7 +89,7 @@ class VipMro(object):
         if len(cateLi4) > 0:
             for ct4 in cateLi4:
                 name4 = ct4.string
-                url4 = self.__fullUrl(ct4['href'])
+                url4 = self.fullUrl(ct4['href'])
 
                 cate4.append({'name': name4, 'url': url4})
                 # print(mCateName+"|"+ mainUrl+"|"+name2+"|"+url2+"|"+name3+"|"+url3+"|"+name4+"|"+url4)
@@ -93,7 +105,7 @@ class VipMro(object):
         nextPage = product_list_page.find('div', class_='m-pagination').find('a', text='下一页')
 
         if len(nextPage) != 0:
-            nextPage = self.__fullUrl(nextPage['href'])
+            nextPage = self.fullUrl(nextPage['href'])
         else:
             nextPage = None
 
@@ -155,5 +167,63 @@ class VipMro(object):
         productInfo = {'id':productId, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo}
         return productInfo
 
+    def __saveC1(self):
+        db = self.__getDb()
+        db.connectMysql()
+        try:
+            for c1 in self.category1:
+                db.insertMysql('category',
+                               {'c_name': c1['name'], 'c_url': c1['url'], 'c_index': c1['cateIndex'], 'lavel': 1,
+                                'parent_name': ''})
+        except:
+            raise
+        finally:
+            db.closeMysql()
+
+    def __saveC2(self,cate2, parentName):
+        db = self.__getDb()
+        db.connectMysql()
+        try:
+            for c2 in cate2:
+                db.insertMysql('category',
+                               {'c_name': c2['name'], 'c_url': c2['url'], 'c_index': c2['subCateId'], 'lavel': 2,
+                                'parent_name': parentName})
+        except:
+            raise
+        finally:
+            db.closeMysql()
 
 
+    def __saveC3(self, cate3, parentName):
+        db = self.__getDb()
+        db.connectMysql()
+        try:
+            for c3 in cate3:
+                db.insertMysql('category',
+                               {'c_name': c3['name'], 'c_url': c3['url'], 'c_index': 0, 'lavel': 3,
+                                'parent_name': parentName})
+        except:
+            raise
+        finally:
+            db.closeMysql()
+
+    def __saveC4(self, cate4, parentName):
+        db = self.__getDb()
+        db.connectMysql()
+        try:
+            for c4 in cate4:
+                db.insertMysql('category',
+                               {'c_name': c4['name'], 'c_url': c4['url'], 'c_index': '', 'lavel': 4,
+                                'parent_name': parentName})
+        except:
+            raise
+        finally:
+            db.closeMysql()
+
+
+    def __getDb(self):
+        host = '127.0.0.1'
+        port = 8889
+        password = 'root1'
+        user = 'root'
+        return MySQLCommand(host,port,user,password,'python')
