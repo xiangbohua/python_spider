@@ -7,8 +7,11 @@ from bs4 import BeautifulSoup
 
 
 vip = VipMro()
-mainCates = vip.saveCategory()
-print(vip.category3)
-exit(1)
+vip.saveCategory()
+
+print(vip.category4[0])
+
+
+exit()
 
 

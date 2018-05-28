@@ -27,15 +27,18 @@ class VipMro(object):
             mCateName = c.a.contents[2].strip() #搬运、存储、包材
             url = "http://www.vipmro.com/s/c-" + str(cateIndex)
 
+
             self.category1.append({'name1': mCateName, 'url1':url})
 
             self.getOneMainCate(cateIndex, mCateName, url)
 
+            break
 
     #获取二级到三级分类四级分类
     def getOneMainCate(self, cateIndex, mCateName, mainUrl):
-        secCateObj = [];
         sub1Cat = self.mainPage.find('div', class_='J_cateBox_'+str(cateIndex)).find_all('a', href=re.compile("/s/c-+"+str(cateIndex) + "\d\d$"))
+
+
         for sub2 in sub1Cat:
             subCateId = sub2['href'][-2:]
             url2 = self.url + sub2['href']
@@ -45,12 +48,41 @@ class VipMro(object):
             for sub3 in sub2Cat:
                 url3 = self.url + sub3['href']
                 name3 = sub3.string
-                self.category3.append({'name1': mCateName, 'url1': mainUrl, 'name2': name2, 'url2': url2, 'name3':name3, 'url3':url3})
+
+                self.category3.append(
+                    {'need': 1, 'name1': mCateName, 'url1': mainUrl, 'name2': name2, 'url2': url2, 'name3': name3,
+                     'url3': url3})
+
+                soupCate4 = getHtmlAsSoup(url3)
+                cateLi4 = soupCate4.find_all('a', href=re.compile(url3[-11:]+"\d\d$"))
+
+                if len(cateLi4) > 0:
+                    for ct4 in cateLi4:
+                        name4 = ct4.string
+                        url4 = self.url + ct4['href']
+
+                        self.category4.append(
+                            {'name1': mCateName, 'url1': mainUrl, 'name2': name2, 'url2': url2, 'name3': name3,
+                             'url3': url3, 'name4':name4, 'url4':url4})
+
+                        break
+                        #print(mCateName+"|"+ mainUrl+"|"+name2+"|"+url2+"|"+name3+"|"+url3+"|"+name4+"|"+url4)
+                else:
+                    self.category4.append(
+                        {'name1': mCateName, 'url1': mainUrl, 'name2': name2, 'url2': url2, 'name3': name3,
+                         'url3': url3,'name4':'', 'url4':''})
+                    #print(mCateName + "|" + mainUrl + "|" + name2 + "|" + url2 + "|" + name3 + "|" + url3 )
+            break
+
+    #传入第一个
+    def getFirstAndTotalPages(self, url):
 
 
 
     def getProductList(self, pageUrl):
         return ['product1', 'product2']
+
+
 
 
     def processOneProduct(self, productUrl):
