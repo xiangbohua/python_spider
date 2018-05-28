@@ -31,14 +31,36 @@ class MySQLCommand(object):
             print(sql + ' execute failed.')
 
     def insertMysql(self, table, column_value):
-        column, value = ''
-        for col,val in column_value:
-            column += col + ","
-            value += val + ","
+        column = ''
+        value = ''
 
-        sql = "INSERT INTO " + table + "(" + column[:-1] + " )" + " VALUES(" + value[:-1] + "')"
+        if isinstance(column_value, (dict)):
+            for col, val in column_value.items():
+                column += "`" + col + "`,"
+                if value == '':
+                    value += '('
+                value += "'" + val + "',"
+            value = value[:-1] + ')'
+
+        elif isinstance(column_value, (list)):
+            if len(column_value) > 0:
+                for col,val in column_value[0].items():
+                    column += "`" + col + "`,"
+            for d in column_value:
+                valueOne = ''
+                for col, val in d.items():
+                    if valueOne == '':
+                        valueOne += '('
+                    valueOne += "'" + val + "',"
+                valueOne = valueOne[:-1] + ")"
+                value += valueOne + ","
+            value = value[:-1]
+
+        sql = "INSERT INTO " + table + " (" + column[:-1] + ") " + "VALUES " + value
+
         try:
             self.cursor.execute(sql)
+            self.conn.commit()
         except:
             print("insert failed.")
 
