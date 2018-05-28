@@ -12,8 +12,34 @@ class MySQLCommand(object):
         self.user = user
         self.password = passwd
         self.db = db
+        self.auto_commit = True
 
-    def connectMysql(self):
+    def begin(self):
+        try:
+            self.conn.begin()
+            self.auto_commit = False
+        except:
+            self.auto_commit = True
+            raise
+
+    def rollback(self):
+        if self.auto_commit == True :
+            try:
+                self.conn.rollback()
+            except:
+                raise
+            finally:
+                self.auto_commit = True
+
+    def commit(self):
+        try:
+            self.conn.commit()
+        except:
+            raise
+        finally:
+            self.auto_commit = True
+
+    def connect(self):
         try:
             self.conn = pymysql.connect(host=self.host, port=self.port, user=self.user, passwd=self.password,
                                         db=self.db, charset='utf8')
@@ -22,15 +48,16 @@ class MySQLCommand(object):
             print('connect mysql error.')
             raise
 
-    def queryMysql(self, sql):
+    def select(self, sql):
         try:
             self.cursor.execute(sql)
-            row = self.cursor.fetchone()
-            print(row)
+            rows = self.cursor.fetchall()
+            return rows
         except:
             print(sql + ' execute failed.')
+            raise
 
-    def insertMysql(self, table, column_value):
+    def insert(self, table, column_value):
         column = ''
         value = ''
 
@@ -64,24 +91,37 @@ class MySQLCommand(object):
 
         try:
             self.cursor.execute(sql)
-            self.conn.commit()
+            if self.auto_commit == True:
+                self.conn.commit()
+
         except:
             self.conn.rollback()
             print("insert failed.")
+            raise
 
-    def updateMysqlSN(self, table, where, column_value):
+    def update(self, table, where, column_value):
         setStatement = ''
-        for col, val in column_value:
-            setStatement += col + " = " + val + ","
+        for col, val in column_value.items():
+            setStatement += col + " = " + str(val) + ","
 
-        sql = "UPDATE " + table + " SET " + setStatement[:-1] + "'" + " WHERE '" + where
-        print("update sn:" + sql)
+        sql = "UPDATE " + table + " SET " + setStatement[:-1] + " WHERE " + where
 
         try:
             self.cursor.execute(sql)
-            self.conn.commit()
+            if self.auto_commit == True:
+                self.conn.commit()
+                # print("update 成功:" + sql)
         except:
             self.conn.rollback()
+            # print('update 失败:' + sql)
+            raise
+
+    def count(self, table, where):
+        sql = "select count(*) from " + table + " where " + where
+
+        count = self.select(sql)[0][0]
+        return count
+
 
     def closeMysql(self):
         self.cursor.close()

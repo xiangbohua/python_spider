@@ -9,7 +9,9 @@ from dbtool import MySQLCommand
 
 vip = VipMro()
 
-vip.saveAllCate()
+
+vip.test()
+
 
 exit()
 

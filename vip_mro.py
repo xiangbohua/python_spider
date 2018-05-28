@@ -8,10 +8,6 @@ from dbtool import MySQLCommand
 
 class VipMro(object):
     #保存分类信息
-    category1 = []
-    category2 = []
-    category3 = []
-    category4 = []
 
     def __init__(self):
         self.url = 'http://www.vipmro.com'
@@ -28,19 +24,41 @@ class VipMro(object):
 
             cate2 = self.getCate2(cateIndex)
             self.__saveC2(cate2, c1['name'])
-            self.category2 += cate2
 
-            for c2 in self.category2:
+            for c2 in cate2:
                 cate3 = self.getCate3(cateIndex, c2['subCateId'])
                 self.__saveC3(cate3, c2['name'])
 
-                self.category3 += cate3
-                for c3 in self.category3:
+                for c3 in cate3:
                     cate4 = self.getCate4(c3['name'], c3['url'])
-
                     self.__saveC4(cate4, c3['name'])
-                    self.category4 += cate4
 
+    def saveAllProduct(self):
+        db = self.__getDb(True)
+
+        cate4 = db.select('select id, c_url from category where level =4 limit 1')
+        for categoryUrl in cate4:
+            url = categoryUrl[1]
+            id = categoryUrl[0]
+
+            next = url
+
+            try:
+                while next != None:
+                    productList = self.getProductList(next)
+                    next = productList['next']
+                    urls = productList['urls']
+
+                    for pUrl in urls:
+                        productInfo = self.processOneProduct(pUrl)
+                        self.saveProduct(productInfo)
+
+                db = self.__getDb()
+                db.update('category', "id = " + str(id), {'processed':1})
+
+            except:
+                db = self.__getDb()
+                db.update('category', "id = " + str(id), {'processed': 2})
 
 
 
@@ -104,7 +122,7 @@ class VipMro(object):
         #尝试获取下一页url
         nextPage = product_list_page.find('div', class_='m-pagination').find('a', text='下一页')
 
-        if len(nextPage) != 0:
+        if nextPage != None and len(nextPage) != 0:
             nextPage = self.fullUrl(nextPage['href'])
         else:
             nextPage = None
@@ -125,8 +143,6 @@ class VipMro(object):
         categoryPath = ''
         for cpt in categoryPathTag:
             categoryPath += cpt.string.strip()
-        print(categoryPath)
-        exit(1)
 
         productId = productUrl[productUrl.find('product/') + 8:]
         #品名
@@ -162,68 +178,112 @@ class VipMro(object):
         for imgtag in imgTags:
             imgUrls.append(imgtag['src'])
 
-        imageInfo = {'product_id': productId, 'product_name':productName, 'imgs':imgUrls}
+        imageInfo = imgUrls
 
-        productInfo = {'id':productId, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo}
+        productInfo = {'id':productId,'categoryPath':categoryPath, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo}
         return productInfo
 
+    #保存一条商品数据到数据，立即提交事务版本
+    def saveProduct(self, productInfo):
+        productData = {'category_path': productInfo['categoryPath'], 'product_id':productInfo['id'], 'product_code':productInfo['code'], 'product_url':productInfo['url'], 'product_name':productInfo['name'], 'price':productInfo['price'], 'model':productInfo['model'], 'buy_code':productInfo['buyCode'], 'brand_name':productInfo['brandname'], 'brand_img':productInfo['brandimg'], 'brand_url':productInfo['brandurl']}
+
+        db = self.__getDb(True)
+        checkExited = db.count("product", "product_code = '" + productInfo['code'] +"'")
+        if checkExited > 0 :
+            print(productInfo['code'] + '已经保存')
+            return
+
+        imageData = []
+        for img in productInfo['detail']:
+            imageData.append({'product_code':productInfo['code'], 'product_id':productInfo['id'],'image_url':img})
+
+        specData = []
+        for spec in productInfo['spec']:
+            specData.append({'product_code':productInfo['code'], 'product_id':productInfo['id'],'spec_name':spec['key'], 'spec_value':spec['value']})
+
+        db.begin()
+        try:
+            db.insert('product', productData)
+            db.insert('product_images', imageData)
+            db.insert('product_spec', specData)
+            db.commit()
+            print('成功保存数据：')
+        except:
+            db.rollback()
+            print('插入数据失败，已回滚')
+            raise
+
+    #保存一级分类
     def __saveC1(self):
         db = self.__getDb()
-        db.connectMysql()
+        db.connect()
         try:
             for c1 in self.category1:
                 db.insertMysql('category',
-                               {'c_name': c1['name'], 'c_url': c1['url'], 'c_index': c1['cateIndex'], 'lavel': 1,
+                               {'c_name': c1['name'], 'c_url': c1['url'], 'c_index': c1['cateIndex'], 'level': 1,
                                 'parent_name': ''})
         except:
             raise
         finally:
             db.closeMysql()
 
+    # 保存二级分类
     def __saveC2(self,cate2, parentName):
         db = self.__getDb()
-        db.connectMysql()
+        db.connect()
         try:
             for c2 in cate2:
-                db.insertMysql('category',
-                               {'c_name': c2['name'], 'c_url': c2['url'], 'c_index': c2['subCateId'], 'lavel': 2,
+                db.insert('category',
+                               {'c_name': c2['name'], 'c_url': c2['url'], 'c_index': c2['subCateId'], 'level': 2,
                                 'parent_name': parentName})
         except:
             raise
         finally:
             db.closeMysql()
 
-
+    # 保存三级分类
     def __saveC3(self, cate3, parentName):
         db = self.__getDb()
-        db.connectMysql()
+        db.connect()
         try:
             for c3 in cate3:
-                db.insertMysql('category',
-                               {'c_name': c3['name'], 'c_url': c3['url'], 'c_index': 0, 'lavel': 3,
+                db.insert('category',
+                               {'c_name': c3['name'], 'c_url': c3['url'], 'c_index': 0, 'level': 3,
                                 'parent_name': parentName})
         except:
             raise
         finally:
             db.closeMysql()
 
+    # 保存四级分类
     def __saveC4(self, cate4, parentName):
         db = self.__getDb()
-        db.connectMysql()
+        db.connect()
         try:
             for c4 in cate4:
-                db.insertMysql('category',
-                               {'c_name': c4['name'], 'c_url': c4['url'], 'c_index': '', 'lavel': 4,
+                db.insert('category',
+                               {'c_name': c4['name'], 'c_url': c4['url'], 'c_index': '', 'level': 4,
                                 'parent_name': parentName})
         except:
             raise
         finally:
             db.closeMysql()
 
-
-    def __getDb(self):
+    #获取数据库对象
+    def __getDb(self, connect_now = False):
         host = '127.0.0.1'
         port = 8889
         password = 'root1'
         user = 'root'
-        return MySQLCommand(host,port,user,password,'python')
+        db = MySQLCommand(host,port,user,password,'python')
+        if connect_now ==  True:
+            db.connect()
+        return db
+
+
+    def test(self):
+        db = self.__getDb(True)
+        id = '7211'
+        db.update('category', "id = " + id, {'processed': 2})
+        print(1)
+        pass
