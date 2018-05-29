@@ -50,7 +50,7 @@ class VipMro(object):
 
     def saveAllProduct(self):
         db = self.__getDb(True)
-        cate4 = db.select('select id, c_url from category where level =4 and processed = 0')
+        cate4 = db.select('select id, c_url from category where level = 4 and processed = 0')
         for categoryUrl in cate4:
             url = categoryUrl[1]
             id = categoryUrl[0]
@@ -65,15 +65,18 @@ class VipMro(object):
 
                     for pUrl in urls:
                         fUrl = self.fullUrl(pUrl)
-                        try:
-                            productInfo = self.processOneProduct(fUrl)
-                            self.saveProduct(productInfo)
-                            self.downloadImgWithProduct(productInfo)
+                        existed = self.checkProductExisted(url)
+                        if not existed:
+                            try:
+                                productInfo = self.processOneProduct(fUrl)
+                                self.saveProduct(productInfo)
+                                self.downloadImgWithProduct(productInfo)
 
-                        except:
-                            db = self.__getDb(True)
-                            db.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
-
+                            except:
+                                db = self.__getDb(True)
+                                db.insert('error_product', {'type': '保存商品', 'error_url': fUrl})
+                        else:
+                            print('已经存在无需保存:' + urls)
 
                 db.update('category', "id = " + str(id), {'processed':1})
 
@@ -395,3 +398,7 @@ class VipMro(object):
     def test(self):
         pass
 
+    def checkProductExisted(self, url):
+        db = self.__getDb(True)
+        count = db.count('product', "product_url = '" + url +"'")
+        return count > 0
