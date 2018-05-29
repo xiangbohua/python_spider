@@ -285,11 +285,14 @@ class VipMro(object):
         db = self.__getDb(True)
         errors = db.select("select *from error_product where type = '保存商品' and redo = 0")
         for err in errors:
-            url = err[2]
-            id = err[0]
-            product = self.processOneProduct(url)
-            self.saveProduct(product)
-            db.update('error_product', 'id = ' + str(id), {'redo':'1'})
+            try:
+                url = err[2]
+                id = err[0]
+                product = self.processOneProduct(url)
+                self.saveProduct(product)
+                db.update('error_product', 'id = ' + str(id), {'redo': '1'})
+            except:
+                print('重试获取商品信息再次失败：' + url)
 
     #保存一级分类
     def __saveC1(self):
@@ -369,7 +372,7 @@ class VipMro(object):
                 product = self.processOneProduct(url)
                 self.downloadImgWithProduct(product)
             except:
-                print('图片保存失败' + url)
+                print('重新保存图片再次失败' + url)
 
 
     def getShortName(self, fullPath):
