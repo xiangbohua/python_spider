@@ -102,7 +102,7 @@ class MySQLCommand(object):
     def update(self, table, where, column_value):
         setStatement = ''
         for col, val in column_value.items():
-            setStatement += col + " = " + str(val) + ","
+            setStatement += col + " = '" + str(val) + "',"
 
         sql = "UPDATE " + table + " SET " + setStatement[:-1] + " WHERE " + where
 
@@ -113,7 +113,7 @@ class MySQLCommand(object):
                 # print("update 成功:" + sql)
         except:
             self.conn.rollback()
-            # print('update 失败:' + sql)
+            print('update 失败:' + sql)
             raise
 
     def count(self, table, where):

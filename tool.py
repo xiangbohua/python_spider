@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import pymysql
 import os
 import gzip
+import binascii
 
 def getHtmlAsSoup(url):
     request = urllib.request.Request(url)
@@ -22,10 +23,12 @@ def mkDir(fullPath):
 def downloadImg(imageUrl, savePath):
     from urllib.request import urlretrieve
     urlretrieve(imageUrl, savePath)
-    zipData = read_gz_file(savePath)
-    f = open(savePath, 'wb')  # 若是'wb'就表示写二进制文件
-    f.write(zipData)
-    f.close()
+    #当文件是GZIP文件时才尝试解压
+    if is_gz_file(savePath):
+        zipData = read_gz_file(savePath)
+        f = open(savePath, 'wb')  # 若是'wb'就表示写二进制文件
+        f.write(zipData)
+        f.close()
 
 def read_gz_file(path):
     '''read the existing gzip-format file,and return the content of this file'''
@@ -36,4 +39,6 @@ def read_gz_file(path):
     else:
         print(path + '文件不存在')
 
-
+def is_gz_file(filepath):
+    with open(filepath, 'rb') as test_f:
+        return binascii.hexlify(test_f.read(2)) == b'1f8b'

@@ -49,8 +49,7 @@ class VipMro(object):
 
     def saveAllProduct(self):
         db = self.__getDb(True)
-
-        cate4 = db.select('select id, c_url from category where level =4 and processed = 0 limit 10')
+        cate4 = db.select('select id, c_url from category where level =4 and processed = 0 limit 1')
         for categoryUrl in cate4:
             url = categoryUrl[1]
             id = categoryUrl[0]
@@ -163,6 +162,9 @@ class VipMro(object):
             categoryPath += cpt.string.strip()
 
         productId = productUrl[productUrl.find('product/') + 8:]
+        categoryName = categoryPath[1].split('>')
+        categoryName = categoryName[-2:-1][0]
+
         #品名
         productName = detailSoup.find('h1', class_='detail-goods-right-head ft22').string.strip()
         productCode = detailSoup.find('font', class_='J_goodNo').string.strip()
@@ -204,12 +206,12 @@ class VipMro(object):
 
         imageInfo = imgUrls
 
-        productInfo = {'id':productId,'categoryPath':categoryPath, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo, 'small_img':smallImgUrls}
+        productInfo = {'id':productId,'categoryPath':categoryPath, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo, 'small_img':smallImgUrls, 'category_name':categoryName}
         return productInfo
 
     #保存一条商品数据到数据，立即提交事务版本
     def saveProduct(self, productInfo):
-        productData = {'category_path': productInfo['categoryPath'], 'product_id':productInfo['id'], 'product_code':productInfo['code'], 'product_url':productInfo['url'], 'product_name':productInfo['name'], 'price':productInfo['price'], 'model':productInfo['model'], 'buy_code':productInfo['buyCode'], 'brand_name':productInfo['brandname'], 'brand_img':productInfo['brandimg'], 'brand_url':productInfo['brandurl']}
+        productData = {'category_path': productInfo['categoryPath'], 'product_id':productInfo['id'], 'product_code':productInfo['code'], 'product_url':productInfo['url'], 'product_name':productInfo['name'], 'price':productInfo['price'], 'model':productInfo['model'], 'buy_code':productInfo['buyCode'], 'brand_name':productInfo['brandname'], 'brand_img':productInfo['brandimg'], 'brand_url':productInfo['brandurl'], 'category_name': productInfo['category_name']}
 
         db = self.__getDb(True)
         checkExited = db.count("product", "product_code = '" + productInfo['code'] +"'")
@@ -244,7 +246,7 @@ class VipMro(object):
             raise
 
 
-    def downloadImg(self, productInfo):
+    def downloadImgWithProduct(self, productInfo):
         categoryPath = productInfo['categoryPath'].split('>')
         categoryPath = categoryPath[1:len(categoryPath) - 1]
         nextUrl = self.base_path
@@ -349,18 +351,19 @@ class VipMro(object):
 
     def saveImageWithUrl(self):
         db = self.__getDb(True)
-        rows = db.select('select id, product_url from product where  image_saved = 0')
+        rows = db.select('select id, product_url from product where image_saved = 0 ')
         for row in rows:
             url = row[1]
             id = row[0]
             try:
                 product = self.processOneProduct(url)
-                self.downloadImg(product)
+                self.downloadImgWithProduct(product)
                 db.update('product', ' id = ' + str(id), {'image_saved': 1})
                 print('图片已保存' + product['code'])
             except:
                 db.update('product', ' id = ' + str(id), {'image_saved': 2})
                 print('图片保存失败' + product['code'])
+                raise
 
 
     def getShortName(self, fullPath):
@@ -374,5 +377,11 @@ class VipMro(object):
 
     def test(self):
         db = self.__getDb(True)
-        ct = db.count('product', '1=1')
-        print(ct)
+        row = db.select('select id,category_path from product')
+        for r in row:
+            id = r[0]
+            category_name = r[1].split('>')
+            category_name = category_name[-2:-1][0]
+            db.update('product', 'id=' +str(id), {'category_name':category_name})
+
+
