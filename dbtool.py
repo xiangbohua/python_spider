@@ -118,7 +118,6 @@ class MySQLCommand(object):
 
     def count(self, table, where):
         sql = "select count(*) from " + table + " where " + where
-
         count = self.select(sql)[0][0]
         return count
 

@@ -7,17 +7,24 @@ from tool import downloadImg
 import re
 import string
 from dbtool import MySQLCommand
-
+import configparser
+import os
 
 class VipMro(object):
+    mainPage = None
     #保存分类信息
-
-
     def __init__(self):
         self.url = 'http://www.vipmro.com'
-        self.mainPage = getHtmlAsSoup(self.url)
-        self.base_path = '/Users/xiangbohua/Downloads/vipmro/'
+        self.conf = configparser.ConfigParser()
+        if not os.path.exists('conf.ini'):
+            raise FileNotFoundError
+        self.conf.read('conf.ini')
+
+        self.base_path = self.getConfig('db_image_path')
         mkDir(self.base_path)
+
+    def getMainPage(self):
+        self.mainPage = getHtmlAsSoup(self.url)
 
     def fullUrl(self, subUrl):
         return self.url + subUrl
@@ -259,6 +266,8 @@ class VipMro(object):
                 imagePath = mainPath + self.getShortName(imageUrl)
                 downloadImg(imageUrl, imagePath)
 
+
+
     def redoError(self):
         db = self.__getDb(True)
         errors = db.select("select *from error_product where type = '保存商品' and redo = 0")
@@ -327,11 +336,12 @@ class VipMro(object):
 
     #获取数据库对象
     def __getDb(self, connect_now = False):
-        host = '127.0.0.1'
-        port = 8889
-        password = 'root1'
-        user = 'root'
-        db = MySQLCommand(host,port,user,password,'python')
+        host = self.getConfig('db_host')
+        port = int(self.getConfig('db_port'))
+        user = self.getConfig('db_user')
+        password = self.getConfig('db_password')
+        db_name = self.getConfig('db_name')
+        db = MySQLCommand(host,port,user,password, db_name)
         if connect_now ==  True:
             db.connect()
         return db
@@ -341,5 +351,11 @@ class VipMro(object):
         shortName = shortName[:shortName.find('/')][::-1]
         return shortName
 
+    def getConfig(self, key):
+        con = self.conf.get('config', key)
+        return con
+
     def test(self):
-        downloadImg('')
+        db = self.__getDb(True)
+        ct = db.count('product', '1=1')
+        print(ct)
