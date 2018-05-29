@@ -342,8 +342,4 @@ class VipMro(object):
         return shortName
 
     def test(self):
-        db = self.__getDb(True)
-        id = '7211'
-        db.update('category', "id = " + id, {'processed': 2})
-        print(1)
-        pass
+        downloadImg('')

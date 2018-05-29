@@ -5,6 +5,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 import pymysql
 import os
+import gzip
 
 def getHtmlAsSoup(url):
     request = urllib.request.Request(url)
@@ -19,18 +20,20 @@ def mkDir(fullPath):
         os.mkdir(fullPath)
 
 def downloadImg(imageUrl, savePath):
-    print(imageUrl)
-
-    url = 'http://www.someserver.com/cgi-bin/register.cgi'
-    user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
-    values = {'name': 'Michael Foord',
-              'location': 'Northampton',
-              'language': 'Python'}
-    headers = {'User-Agent': user_agent}
-
-    req = urllib.request.Request(url, {}, headers)
-
-    f = open(savePath, 'wb')
-    f.write(img_url.content)
+    from urllib.request import urlretrieve
+    urlretrieve(imageUrl, savePath)
+    zipData = read_gz_file(savePath)
+    f = open(savePath, 'wb')  # 若是'wb'就表示写二进制文件
+    f.write(zipData)
     f.close()
-    exit()
+
+def read_gz_file(path):
+    '''read the existing gzip-format file,and return the content of this file'''
+    if os.path.exists(path):
+        #the function open(filename, mode = 'rb'),so the mode argument is default is 'rb'
+        with gzip.open(path, 'rb') as pf:
+            return pf.read()
+    else:
+        print(path + '文件不存在')
+
+
