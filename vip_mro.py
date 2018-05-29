@@ -346,6 +346,15 @@ class VipMro(object):
             db.connect()
         return db
 
+    def saveImageWithUrl(self, url):
+        db = self.__getDb(True)
+        rows = db.select('select product_url from product limit 2')
+        for row in rows:
+            url = row[0]
+            product = self.processOneProduct(url)
+            self.downloadImg(product)
+            print('图片已保存' + product['code'])
+
     def getShortName(self, fullPath):
         shortName = fullPath[::-1]
         shortName = shortName[:shortName.find('/')][::-1]

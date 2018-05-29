@@ -11,8 +11,8 @@ vip = VipMro()
 
 
 
-#pro = vip.processOneProduct('http://www.vipmro.com/product/1159635')
-#vip.downloadImg(pro)
+pro = vip.processOneProduct('http://www.vipmro.com/product/1159635')
+vip.downloadImg(pro)
 
 
 vip.test()
