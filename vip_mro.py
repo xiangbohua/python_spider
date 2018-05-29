@@ -67,6 +67,7 @@ class VipMro(object):
                         try:
                             productInfo = self.processOneProduct(fUrl)
                             self.saveProduct(productInfo)
+                            self.downloadImgWithProduct(productInfo)
                         except:
                             newDb = self.__getDb(True)
                             newDb.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
