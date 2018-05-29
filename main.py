@@ -9,7 +9,7 @@ from dbtool import MySQLCommand
 
 vip = VipMro()
 
-vip.saveImageWithUrl()
+vip.test()
 
 
 print('处理完成')
