@@ -9,14 +9,10 @@ from dbtool import MySQLCommand
 
 vip = VipMro()
 
+vip.saveImageWithUrl()
 
 
-pro = vip.processOneProduct('http://www.vipmro.com/product/1159635')
-vip.downloadImg(pro)
-
-
-vip.test()
-
+print('处理完成')
 exit()
 
 
