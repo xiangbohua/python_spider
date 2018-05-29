@@ -12,6 +12,11 @@ from tool import is_gz_file
 
 vip = VipMro()
 
+p = vip.processOneProduct('http://www.vipmro.com/product/573468')
+vip.downloadImgWithProduct(p)
+
+print()
+exit(1)
 
 vip.saveImageWithUrl()
 vip.saveAllProduct()

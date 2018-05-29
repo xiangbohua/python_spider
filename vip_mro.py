@@ -68,13 +68,12 @@ class VipMro(object):
                             productInfo = self.processOneProduct(fUrl)
                             self.saveProduct(productInfo)
                             self.downloadImgWithProduct(productInfo)
-                            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 1})
+
                         except:
-                            newDb = self.__getDb(True)
-                            newDb.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
+                            db = self.__getDb(True)
+                            db.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
 
 
-                db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed':1})
 
             except:
@@ -251,28 +250,35 @@ class VipMro(object):
 
 
     def downloadImgWithProduct(self, productInfo):
-        categoryPath = productInfo['categoryPath'].split('>')
-        categoryPath = categoryPath[1:len(categoryPath) - 1]
-        nextUrl = self.base_path
-        for pathName in categoryPath:
-            nextUrl += pathName + '/'
-            mkDir(nextUrl)
+        db = self.__getDb(True)
+        try:
+            categoryPath = productInfo['categoryPath'].split('>')
+            categoryPath = categoryPath[1:len(categoryPath) - 1]
+            nextUrl = self.base_path
+            for pathName in categoryPath:
+                nextUrl += pathName + '/'
+                mkDir(nextUrl)
 
-        mkDir(nextUrl + productInfo['code'])
-        if len(productInfo['detail']) > 0:
-            detailPath = nextUrl + productInfo['code'] + '/详情图/'
-            mkDir(detailPath)
-            for imageUrl in productInfo['detail']:
-                imagePath = detailPath + self.getShortName(imageUrl)
-                downloadImg(imageUrl, imagePath)
+            mkDir(nextUrl + productInfo['code'])
+            if len(productInfo['detail']) > 0:
+                detailPath = nextUrl + productInfo['code'] + '/详情图/'
+                mkDir(detailPath)
+                for imageUrl in productInfo['detail']:
+                    imagePath = detailPath + self.getShortName(imageUrl)
+                    downloadImg(imageUrl, imagePath)
 
-        if len(productInfo['small_img']) > 0:
-            mainPath = nextUrl + productInfo['code'] + '/主图/'
-            mkDir(mainPath)
-            for imageUrl in productInfo['small_img']:
-                imagePath = mainPath + self.getShortName(imageUrl)
-                downloadImg(imageUrl, imagePath)
+            if len(productInfo['small_img']) > 0:
+                mainPath = nextUrl + productInfo['code'] + '/主图/'
+                mkDir(mainPath)
+                for imageUrl in productInfo['small_img']:
+                    imagePath = mainPath + self.getShortName(imageUrl)
+                    downloadImg(imageUrl, imagePath)
 
+            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 1})
+            print('保存图片成功：' + productInfo['code'])
+        except:
+            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 2})
+            print('保存图片失败，已标记为2：'+ productInfo['code'])
 
 
     def redoError(self):
@@ -362,10 +368,7 @@ class VipMro(object):
             try:
                 product = self.processOneProduct(url)
                 self.downloadImgWithProduct(product)
-                db.update('product', ' id = ' + str(id), {'image_saved': 1})
-                print('图片已保存' + product['code'])
             except:
-                db.update('product', ' id = ' + str(id), {'image_saved': 2})
                 print('图片保存失败' + url)
 
 
