@@ -68,9 +68,11 @@ class VipMro(object):
                             productInfo = self.processOneProduct(fUrl)
                             self.saveProduct(productInfo)
                             self.downloadImgWithProduct(productInfo)
+                            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 1})
                         except:
                             newDb = self.__getDb(True)
                             newDb.insert('error_product', {'type': '保存商品', 'error_url':fUrl})
+
 
                 db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed':1})
