@@ -9,6 +9,7 @@ import string
 from dbtool import MySQLCommand
 import configparser
 import os
+import sys
 
 class VipMro(object):
     mainPage = None
@@ -248,7 +249,7 @@ class VipMro(object):
         categoryPath = categoryPath[1:len(categoryPath) - 1]
         nextUrl = self.base_path
         for pathName in categoryPath:
-            nextUrl += pathName + '/'
+            nextUrl += pathName.encode('GB2312') + '/'
             mkDir(nextUrl)
 
         mkDir(nextUrl + productInfo['code'])
