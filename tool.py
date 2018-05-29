@@ -22,13 +22,17 @@ def mkDir(fullPath):
 
 def downloadImg(imageUrl, savePath):
     from urllib.request import urlretrieve
-    urlretrieve(imageUrl, savePath)
-    #当文件是GZIP文件时才尝试解压
-    if is_gz_file(savePath):
-        zipData = read_gz_file(savePath)
-        f = open(savePath, 'wb')  # 若是'wb'就表示写二进制文件
-        f.write(zipData)
-        f.close()
+    #文件不存在时访问图片下载
+    if not os.path.exists(savePath):
+        urlretrieve(imageUrl, savePath)
+        #当文件是GZIP文件时才尝试解压
+        if is_gz_file(savePath):
+            zipData = read_gz_file(savePath)
+            f = open(savePath, 'wb')  # 若是'wb'就表示写二进制文件
+            f.write(zipData)
+            f.close()
+    else:
+        print('图片已存在:'+ savePath)
 
 def read_gz_file(path):
     '''read the existing gzip-format file,and return the content of this file'''
