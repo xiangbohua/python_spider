@@ -2,16 +2,22 @@
 # -*- coding: UTF* -*-
 import time
 from tool import getHtmlAsSoup
+from tool import mkDir
+from tool import downloadImg
 import re
 import string
 from dbtool import MySQLCommand
 
+
 class VipMro(object):
     #保存分类信息
+
 
     def __init__(self):
         self.url = 'http://www.vipmro.com'
         self.mainPage = getHtmlAsSoup(self.url)
+        self.base_path = '/Users/xiangbohua/Downloads/vipmro/'
+        mkDir(self.base_path)
 
     def fullUrl(self, subUrl):
         return self.url + subUrl
@@ -53,7 +59,6 @@ class VipMro(object):
                         fUrl = self.fullUrl(pUrl)
                         try:
                             productInfo = self.processOneProduct(fUrl)
-                            time.sleep(2)
                             self.saveProduct(productInfo)
                         except:
                             newDb = self.__getDb(True)
@@ -66,9 +71,6 @@ class VipMro(object):
                 raise
                 db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed': 2})
-
-
-
 
     #获取所有一级分类
     def getCate1(self):
@@ -182,13 +184,19 @@ class VipMro(object):
                 specInfo.append({'key':tr[2].text.strip(), 'value':tr[3].text.strip()})
 
         imgTags = detailSoup.find('div', class_='detail-attrs-right-body J_body').find_all('img')
+
         imgUrls = []
         for imgtag in imgTags:
             imgUrls.append(imgtag['src'])
 
+        smallImgUrls = []
+        smallImgTag = detailSoup.find('div', class_='detail-goods-left-do-box').find_all('img')
+        for smImgTg in smallImgTag:
+            smallImgUrls.append(smImgTg['src'])
+
         imageInfo = imgUrls
 
-        productInfo = {'id':productId,'categoryPath':categoryPath, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo}
+        productInfo = {'id':productId,'categoryPath':categoryPath, 'code':productCode, 'url':productUrl,  'name':productName, 'price':price, 'model':model, 'buyCode':buyNo, 'brandname':brandName, 'brandimg':brandImg, 'brandurl':brandUrl, 'spec':specInfo, 'detail':imageInfo, 'small_img':smallImgUrls}
         return productInfo
 
     #保存一条商品数据到数据，立即提交事务版本
@@ -203,7 +211,11 @@ class VipMro(object):
 
         imageData = []
         for img in productInfo['detail']:
-            imageData.append({'product_code':productInfo['code'], 'product_id':productInfo['id'],'image_url':img})
+            imageData.append({'product_code':productInfo['code'], 'product_id':productInfo['id'],'image_url':img,'type':'1'})
+
+        for img in productInfo['small_img']:
+            imageData.append({'product_code':productInfo['code'], 'product_id':productInfo['id'],'image_url':img,'type':'2'})
+
 
         specData = []
         for spec in productInfo['spec']:
@@ -224,10 +236,38 @@ class VipMro(object):
             raise
 
 
+    def downloadImg(self, productInfo):
+        categoryPath = productInfo['categoryPath'].split('>')
+        categoryPath = categoryPath[1:len(categoryPath) - 1]
+        nextUrl = self.base_path
+        for pathName in categoryPath:
+            nextUrl += pathName + '/'
+            mkDir(nextUrl)
+
+        mkDir(nextUrl + productInfo['code'])
+        if len(productInfo['detail']) > 0:
+            detailPath = nextUrl + productInfo['code'] + '/详情图/'
+            mkDir(detailPath)
+            for imageUrl in productInfo['detail']:
+                imagePath = detailPath + self.getShortName(imageUrl)
+                downloadImg(imageUrl, imagePath)
+
+        if len(productInfo['small_img']) > 0:
+            mainPath = nextUrl + productInfo['code'] + '/主图/'
+            mkDir(mainPath)
+            for imageUrl in productInfo['small_img']:
+                imagePath = mainPath + self.getShortName(imageUrl)
+                downloadImg(imageUrl, imagePath)
+
     def redoError(self):
         db = self.__getDb(True)
-        errors = db.select('')
-
+        errors = db.select("select *from error_product where type = '保存商品' and redo = 0")
+        for err in errors:
+            url = err[2]
+            id = err[0]
+            product = self.processOneProduct(url)
+            self.saveProduct(product)
+            db.update('error_product', 'id = ' + str(id), {'redo':'1'})
 
     #保存一级分类
     def __saveC1(self):
@@ -296,6 +336,10 @@ class VipMro(object):
             db.connect()
         return db
 
+    def getShortName(self, fullPath):
+        shortName = fullPath[::-1]
+        shortName = shortName[:shortName.find('/')][::-1]
+        return shortName
 
     def test(self):
         db = self.__getDb(True)

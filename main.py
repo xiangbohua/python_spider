@@ -8,7 +8,11 @@ from dbtool import MySQLCommand
 
 
 vip = VipMro()
-vip.saveAllProduct()
+
+
+
+pro = vip.processOneProduct('http://www.vipmro.com/product/1159635')
+vip.downloadImg(pro)
 
 exit()
 
