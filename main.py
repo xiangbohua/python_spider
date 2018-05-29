@@ -12,8 +12,8 @@ from tool import is_gz_file
 
 vip = VipMro()
 
-vip.saveImageWithUrl()
 
+vip.saveImageWithUrl()
 vip.saveAllProduct()
 
 

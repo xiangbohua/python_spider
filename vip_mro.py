@@ -162,7 +162,9 @@ class VipMro(object):
             categoryPath += cpt.string.strip()
 
         productId = productUrl[productUrl.find('product/') + 8:]
-        categoryName = categoryPath[1].split('>')
+
+        #获取直属分类名称
+        categoryName = categoryPath.split('>')
         categoryName = categoryName[-2:-1][0]
 
         #品名
