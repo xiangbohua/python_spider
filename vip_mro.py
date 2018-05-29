@@ -75,7 +75,6 @@ class VipMro(object):
                 db.update('category', "id = " + str(id), {'processed':1})
 
             except:
-                raise
                 db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed': 2})
 
@@ -365,7 +364,6 @@ class VipMro(object):
             except:
                 db.update('product', ' id = ' + str(id), {'image_saved': 2})
                 print('图片保存失败' + url)
-                raise
 
 
     def getShortName(self, fullPath):
