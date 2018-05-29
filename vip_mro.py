@@ -362,7 +362,7 @@ class VipMro(object):
                 print('图片已保存' + product['code'])
             except:
                 db.update('product', ' id = ' + str(id), {'image_saved': 2})
-                print('图片保存失败' + product['code'])
+                print('图片保存失败' + url)
                 raise
 
 
