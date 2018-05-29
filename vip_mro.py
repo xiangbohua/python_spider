@@ -10,6 +10,7 @@ from dbtool import MySQLCommand
 import configparser
 import os
 import sys
+import time
 
 class VipMro(object):
     mainPage = None
@@ -251,6 +252,7 @@ class VipMro(object):
 
     def downloadImgWithProduct(self, productInfo):
         db = self.__getDb(True)
+        start = time.time()
         try:
             categoryPath = productInfo['categoryPath'].split('>')
             categoryPath = categoryPath[1:len(categoryPath) - 1]
@@ -277,8 +279,14 @@ class VipMro(object):
             db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 1})
             print('保存图片成功：' + productInfo['code'])
         except:
-            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 2})
-            print('保存图片失败，已标记为2：'+ productInfo['code'])
+            endTime = time.time()
+            span = start - endTime
+            save_status = 2
+            if span > 5:
+                save_status = 3
+
+            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': save_status})
+            print('保存图片失败,'+ '耗时'+ str(span)+ 's， 已标记为' + save_status + productInfo['code'])
 
 
     def redoError(self):
