@@ -396,6 +396,9 @@ class VipMro(object):
         return con
 
     def test(self):
+        p = self.processOneProduct('http://www.vipmro.com/product/1283666')
+        self.saveProduct(p)
+
         pass
 
     def checkProductExisted(self, url):

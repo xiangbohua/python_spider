@@ -64,7 +64,8 @@ class MySQLCommand(object):
         if isinstance(column_value, (dict)):
             for col, val in column_value.items():
                 col = str(col)
-                val = str(val)
+                val = str(val).replace("'", "\\'")
+
                 column += "`" + col + "`,"
                 if value == '':
                     value += '('
@@ -74,7 +75,7 @@ class MySQLCommand(object):
         elif isinstance(column_value, (list)):
             if len(column_value) > 0:
                 for col,val in column_value[0].items():
-                    col = str(col)
+                    col = str(col).replace("'", "\\'")
                     column += "`" + col + "`,"
 
             for d in column_value:
