@@ -19,6 +19,5 @@ vip.saveAllProduct()    #开始获取新商品信息，此时会自动保存图�
 
 
 print('处理完成')
-exit()
 
 

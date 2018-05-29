@@ -280,13 +280,13 @@ class VipMro(object):
             print('保存图片成功：' + productInfo['code'])
         except:
             endTime = time.time()
-            span = start - endTime
-            save_status = 2
+            span = endTime - start
+            save_status = '2'
             if span > 5:
-                save_status = 3
+                save_status = '3'
 
             db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': save_status})
-            print('保存图片失败,'+ '耗时'+ str(span)+ 's， 已标记为' + save_status + productInfo['code'])
+            print('保存图片失败,'+ '耗时'+ str(int(span))+ 's， 已标记为' + save_status +' ' + productInfo['code'])
 
 
     def redoError(self):
@@ -393,12 +393,5 @@ class VipMro(object):
         return con
 
     def test(self):
-        db = self.__getDb(True)
-        row = db.select('select id,category_path from product')
-        for r in row:
-            id = r[0]
-            category_name = r[1].split('>')
-            category_name = category_name[-2:-1][0]
-            db.update('product', 'id=' +str(id), {'category_name':category_name})
-
+        pass
 
