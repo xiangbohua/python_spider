@@ -349,7 +349,7 @@ class VipMro(object):
 
     def saveImageWithUrl(self):
         db = self.__getDb(True)
-        rows = db.select('select id, product_url from product where image_saved = 0 limit 2')
+        rows = db.select('select id, product_url from product where image_saved = 0')
         for row in rows:
             url = row[1]
             id = row[0]
