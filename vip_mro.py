@@ -397,7 +397,10 @@ class VipMro(object):
         return con
 
     def test(self):
-        p = self.processOneProduct('http://www.vipmro.com/product/1283666')
+        p = self.processOneProduct('http://www.vipmro.com/product/1645484')
+        print(p)
+
+
         self.saveProduct(p)
 
         pass

@@ -75,7 +75,7 @@ class MySQLCommand(object):
         elif isinstance(column_value, (list)):
             if len(column_value) > 0:
                 for col,val in column_value[0].items():
-                    col = str(col).replace("'", "\\'")
+                    col = col
                     column += "`" + col + "`,"
 
             for d in column_value:
@@ -83,13 +83,12 @@ class MySQLCommand(object):
                 for col, val in d.items():
                     if valueOne == '':
                         valueOne += '('
-                    valueOne += "'" + val + "',"
+                    valueOne += "'" + str(val).replace("'", "\\'") + "',"
                 valueOne = valueOne[:-1] + ")"
                 value += valueOne + ","
             value = value[:-1]
 
         sql = "INSERT INTO " + table + " (" + column[:-1] + ") " + "VALUES " + value
-
         try:
             self.cursor.execute(sql)
             if self.auto_commit == True:
