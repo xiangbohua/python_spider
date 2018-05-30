@@ -16,7 +16,16 @@ from tool import is_gz_file
 
 m = Grainer()
 
-print(m)
+m.db.count('product')
+
+db = m.getDb()
+db.connect()
+print(db.count('product'))
+
+db.closeMysql()
+
+db.connect()
+print(db.count('product'))
 
 
 
