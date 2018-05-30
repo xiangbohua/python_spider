@@ -14,6 +14,14 @@ class MySQLCommand(object):
         self.db = db
         self.auto_commit = True
 
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.closeMysql()
+
+
     def begin(self):
         try:
             self.conn.begin()
@@ -116,11 +124,13 @@ class MySQLCommand(object):
             print('update 失败:' + sql)
             raise
 
-    def count(self, table, where):
-        sql = "select count(*) from " + table + " where " + where
+    def count(self, table, where = ''):
+        sql = "select count(*) from " + table
+        if len(where) > 0:
+            sql +=  " where " + where
+
         count = self.select(sql)[0][0]
         return count
-
 
     def closeMysql(self):
         self.cursor.close()

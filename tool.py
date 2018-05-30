@@ -8,6 +8,9 @@ import os
 import gzip
 import binascii
 
+from my_exceptions import LogicException
+
+
 def getHtmlAsSoup(url):
     request = urllib.request.Request(url)
     response = urllib.request.urlopen(request)
@@ -49,5 +52,5 @@ def is_gz_file(filepath):
 
 
 def raiseIf(checkCandition):
-    if not checkCandition:
-        raise
+    if checkCandition:
+        raise LogicException('逻辑校验失败')

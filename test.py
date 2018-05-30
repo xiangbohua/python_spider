@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 # -*- conding: utf8 -*-
 import m_base
+from m_grainger import Grainer
 
 
 class Base(object):
@@ -26,4 +27,3 @@ class A(Base):
 
 
 
-b = m_base.MBase()

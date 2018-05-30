@@ -6,6 +6,7 @@ import os
 import abc
 
 import tool
+from dbtool import MySQLCommand
 
 from tool import mkDir, raiseIf
 
@@ -52,8 +53,8 @@ class MBase(object):
     def __prepareAll(self):
         self.url = self.getRootUrl()
         self.mark = self.getMark()
-        self.__prepareBasePath()
 
+        self.__prepareBasePath()
 
 
     def __checkAll(self):
@@ -71,8 +72,7 @@ class MBase(object):
 
     def __prepareBasePath(self):
         basePath = self.getConfig('db_image_path')
-        print(basePath)
-        exit(1)
+
         if basePath[-1:] != '/':
             basePath += '/'
         self.base_path = basePath + self.mark + '/'
@@ -81,4 +81,33 @@ class MBase(object):
     def loadMainPage(self):
         self.mainPage = tool.getHtmlAsSoup(self.url)
 
+    def getDb(self):
+        host = self.getConfig('db_host')
+        port = int(self.getConfig('db_port'))
+        user = self.getConfig('db_user')
+        password = self.getConfig('db_password')
+        db_name = self.getConfig('db_name')
+        db = MySQLCommand(host, port, user, password, db_name)
+        db.connect()
+        return db
 
+    db = property(fget=getDb, fset=None, doc='获取数据库对象')
+
+    def checkProductUrl(self, url):
+        count = self.db.count('product', 'product_url = ' + url)
+        return count > 0
+
+    def checkProductCode(self, code):
+        count = self.db.count('product', 'product_code = ' + code)
+        return count > 0
+
+    #传入图片完整路径，返回文件名
+    #传入：http://www.baidu.com/img/01.jpg
+    # 返回:01.jpg
+    def getShortFileName(self, fullPath):
+        shortName = fullPath[::-1]
+        shortName = shortName[:shortName.find('/')][::-1]
+        return shortName
+
+    def getFullUrl(self, sortUrl):
+        return self.url + sortUrl

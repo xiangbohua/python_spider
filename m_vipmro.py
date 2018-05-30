@@ -408,3 +408,43 @@ class VipMro(object):
         count = db.count('product', "product_url = '" + url +"'")
         print('检查商品是否存在：' + str(count))
         return count > 0
+
+
+    def reSaveMainImage(self):
+        db = self.__getDb(True)
+        products = db.select('select id,category_path,product_code from product where  image_saved = 0 limit 1')
+        for p in products:
+
+            pcode = p[2]
+            start = time.time()
+            try:
+                categoryPath = p[1].split('>')
+                categoryPath = categoryPath[1:len(categoryPath) - 1]
+                nextUrl = self.base_path
+                for pathName in categoryPath:
+                    nextUrl += pathName.replace('/', '\\') + '/'
+                    mkDir(nextUrl)
+
+
+                mkDir(nextUrl + pcode)
+                mainImages = db.select("select image_url from product_images where `type` = 2 and product_code = '" + pcode +"'")
+                if len(mainImages) > 0:
+                    mainPath = nextUrl + pcode + '/主图/'
+                    mkDir(mainPath)
+                    for imageUrl in mainImages:
+                        imageUrl = imageUrl[0].replace('!240240', '!450450')
+                        imagePath = mainPath + self.getShortName(imageUrl)
+                        downloadImg(imageUrl, imagePath)
+
+                db.update('product', ' product_code = ' + str(pcode) , {'image_saved': 1})
+                print('保存图片成功：' + pcode)
+            except:
+                endTime = time.time()
+                span = endTime - start
+                save_status = '-1'
+                if span > 5:
+                    save_status = '3'
+
+                #db.update('product', ' product_code = ' + str(pcode), {'image_saved': save_status})
+                print('保存图片失败,' + '耗时' + str(int(span)) + 's， 已标记为' + save_status + ' ' + pcode)
+                raise

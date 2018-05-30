@@ -3,20 +3,14 @@
 import configparser
 import os
 
+from m_base import MBase
 from tool import mkDir
 
 
-class Grainer(object):
-    mainPage = None
+class Grainer(MBase):
+    def getMark(self):
+        return 'grainer'
 
-    def __init__(self):
-        self.url = 'http://www.vipmro.com'
-        self.conf = configparser.ConfigParser()
-        if not os.path.exists('conf.ini'):
-            raise FileNotFoundError
-        self.conf.read('conf.ini')
-
-        self.base_path = self.getConfig('db_image_path')
-        mkDir(self.base_path)
-
+    def getRootUrl(self):
+        return 'https://www.grainger.cn/'
 
