@@ -1,6 +1,6 @@
 #!/usr/local/bin/python3
 # -*- coding: utf-8 -*-
-from vip_mro import VipMro
+from m_vipmro import VipMro
 
 
 vip = VipMro()
