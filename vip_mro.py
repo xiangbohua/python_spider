@@ -397,15 +397,14 @@ class VipMro(object):
         return con
 
     def test(self):
-        p = self.processOneProduct('http://www.vipmro.com/product/1645484')
-        print(p)
+        r = self.checkProductExisted('http://www.vipmro.com/product/1687139')
+        print(r)
 
-
-        self.saveProduct(p)
 
         pass
 
     def checkProductExisted(self, url):
         db = self.__getDb(True)
         count = db.count('product', "product_url = '" + url +"'")
+        print('检查商品是否存在：' + str(count))
         return count > 0
