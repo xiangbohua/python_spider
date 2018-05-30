@@ -412,7 +412,7 @@ class VipMro(object):
 
     def reSaveMainImage(self):
         db = self.__getDb(True)
-        products = db.select('select id,category_path,product_code from product where  image_saved = 0 limit 1')
+        products = db.select('select id,category_path,product_code from product where  image_saved = 0 ')
         for p in products:
 
             pcode = p[2]
@@ -445,6 +445,6 @@ class VipMro(object):
                 if span > 5:
                     save_status = '3'
 
-                #db.update('product', ' product_code = ' + str(pcode), {'image_saved': save_status})
+                db.update('product', ' product_code = ' + str(pcode), {'image_saved': save_status})
                 print('保存图片失败,' + '耗时' + str(int(span)) + 's， 已标记为' + save_status + ' ' + pcode)
                 raise
