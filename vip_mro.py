@@ -83,7 +83,6 @@ class VipMro(object):
             except:
                 db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed': 2})
-                raise
 
     #获取所有一级分类
     def getCate1(self):
@@ -305,6 +304,7 @@ class VipMro(object):
                 db.update('error_product', 'id = ' + str(id), {'redo': '1'})
             except:
                 print('重试获取商品信息再次失败：' + url)
+        print('重试错误商品完成')
 
     #保存一级分类
     def __saveC1(self):
