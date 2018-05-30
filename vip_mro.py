@@ -50,7 +50,7 @@ class VipMro(object):
 
     def saveAllProduct(self):
         db = self.__getDb(True)
-        cate4 = db.select('select id, c_url from category where level = 4 and processed = 2 limit 1')
+        cate4 = db.select('select id, c_url from category where level = 4 and processed = 2')
         for categoryUrl in cate4:
             url = categoryUrl[1]
             id = categoryUrl[0]
