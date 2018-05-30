@@ -50,7 +50,7 @@ class VipMro(object):
 
     def saveAllProduct(self):
         db = self.__getDb(True)
-        cate4 = db.select('select id, c_url from category where level = 4 and processed = 0')
+        cate4 = db.select('select id, c_url from category where level = 4 and processed = 2 limit 1')
         for categoryUrl in cate4:
             url = categoryUrl[1]
             id = categoryUrl[0]
@@ -83,6 +83,7 @@ class VipMro(object):
             except:
                 db = self.__getDb(True)
                 db.update('category', "id = " + str(id), {'processed': 2})
+                raise
 
     #获取所有一级分类
     def getCate1(self):
