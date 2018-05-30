@@ -37,6 +37,32 @@ class MBase(object):
     def getMark(self):
         pass
 
+    @abs.abstractmethod
+    def getOneProduct(self, url):
+        pass
+
+    @abs.abstractmethod
+    def saveOneProduct(self, productInfo):
+        pass
+
+    @abs.abstractmethod
+    def getCategory1(self):
+        pass
+
+    @abs.abstractmethod
+    def getCategory2(self, cate1Info):
+        pass
+
+    @abs.abstractmethod
+    def getCategory3(self, cate2Info):
+        pass
+
+    @abs.abstractmethod
+    def getCategory4(self, cate3Info):
+        pass
+
+
+
     def __init__(self):
         self.__loadConfig()
 
@@ -76,6 +102,7 @@ class MBase(object):
         if basePath[-1:] != '/':
             basePath += '/'
         self.base_path = basePath + self.mark + '/'
+        mkDir(basePath)
         mkDir(self.base_path)
 
     def loadMainPage(self):
@@ -111,3 +138,5 @@ class MBase(object):
 
     def getFullUrl(self, sortUrl):
         return self.url + sortUrl
+
+
