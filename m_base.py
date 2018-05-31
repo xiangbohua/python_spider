@@ -80,7 +80,7 @@ class MBase(object):
     def getCategoryPathList(self, categoryPathStr):
         raise Exception('方法必须实现')
 
-    def getOneSku(self, skuUrl):
+    def getSkuOne(self, skuUrl):
         return None
 
     #保存所有分类
@@ -148,9 +148,10 @@ class MBase(object):
                     try:
                         self.saveProduct(skuInfo, True)
                         self.db.update('product_sku', "where product_code = '" + productInfo.product_code + "' and model_url = '" +sku.model_url + "'", {'info_saved': '1'})
-                    except:
-                        print('商品SKU保存失败' + sku.model_url)
-
+                    except Exception as e:
+                        print('商品SKU保存失败:' + sku.model_url + ":" + str(e))
+                else:
+                    print('保存商品SKU失败：未能获取到SKU对象'+ fullUrl)
 
     #保存分类信息
     def saveCategory(self, categoryInfo, db = None):
@@ -170,51 +171,29 @@ class MBase(object):
     #保存单个商品基础信息
     def saveProduct(self, productInfo, checkExisted = True):
         raiseIf(not isinstance(productInfo, DbObject))
-
+        productInfo.mark = self.mark
         db = self.getDb()
         if checkExisted:
-            checkExited = self.checkProductWithCode(productInfo['code'])
+            checkExited = self.checkProductWithCode(productInfo.product_code)
             if checkExited > 0:
-                print('已经存在无需保存:' + productInfo['code'])
+                print('已经存在无需保存:' + productInfo.product_code)
                 return
 
-        imageData = []
-        for mimg in productInfo['main_img']:
-            if isinstance(mimg, DbObject):
-                imageData.append(mimg.saveableObj())
-
-        for dimg in productInfo['detail_img']:
-            if isinstance(dimg, DbObject):
-                imageData.append(dimg.saveableObj())
-
-        specData = []
-        for specs in productInfo['specs']:
-            if isinstance(specs, DbObject):
-                specData.append(specs.saveableObj())
-
-        skuData = []
-        for skus in productInfo['skus']:
-            if isinstance(skus, DbObject):
-                skuData.append(skus.saveableObj())
-
-        commentsData = []
-        for comments in productInfo['comments']:
-            if isinstance(comments, DbObject):
-                commentsData.append(comments.saveableObj())
+        imageData = self.createSaveObject(productInfo.main_img + productInfo.detail_img)
 
         db.begin()
         try:
             self.saveData(db, 'product', productInfo.saveableObj())
             self.saveData(db, 'product_images', imageData)
-            self.saveData(db, 'product_spec', specData)
-            self.saveData(db, 'product_sku', skuData)
-            self.saveData(db, 'product_comment', commentsData)
+            self.saveData(db, 'product_spec', self.createSaveObject(productInfo.specs))
+            self.saveData(db, 'product_sku', self.createSaveObject(productInfo.skus))
+            self.saveData(db, 'product_comment', self.createSaveObject(productInfo.comments))
 
             db.commit()
-            print('成功保存数据:' + productInfo['code'])
+            print('成功保存商品数据:' + productInfo.product_code)
         except BaseException:
             db.rollback()
-            print('插入数据失败，已回滚')
+            print('保存商品数据失败，已回滚')
             raise
 
     #加载配置文件
@@ -299,39 +278,42 @@ class MBase(object):
 
         start = time.time()
         try:
-            categoryPath = productInfo['categoryPath'].split('>')
+            categoryPath = productInfo.category_path.split('>')
             categoryPath = categoryPath[1:len(categoryPath) - 1]
             nextUrl = self.base_path
             for pathName in categoryPath:
                 nextUrl += pathName.replace('/', '\\') + '/'
                 mkDir(nextUrl)
 
-            mkDir(nextUrl + productInfo['code'])
-            if len(productInfo['detail']) > 0:
-                detailPath = nextUrl + productInfo['code'] + '/详情图/'
-                mkDir(detailPath)
-                for imageUrl in productInfo['detail']:
-                    imagePath = detailPath + self.getShortName(imageUrl)
-                    downloadImg(imageUrl, imagePath)
+            mkDir(nextUrl + productInfo.product_code)
 
-            if len(productInfo['small_img']) > 0:
-                mainPath = nextUrl + productInfo['code'] + '/主图/'
+            if len(productInfo.main_img) > 0:
+                mainPath = nextUrl + productInfo.product_code + '/主图/'
                 mkDir(mainPath)
-                for imageUrl in productInfo['small_img']:
+                for dbImage in productInfo.main_img:
+                    imageUrl = dbImage.image_url
                     imagePath = mainPath + self.getShortName(imageUrl)
                     downloadImg(imageUrl, imagePath)
 
-            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': 1})
-            print('保存图片成功：' + productInfo['code'])
-        except:
+            if len(productInfo.detail_img) > 0:
+                detailPath = nextUrl + productInfo.product_code + '/详情图/'
+                mkDir(detailPath)
+                for dbImage in productInfo.main_img:
+                    imageUrl = dbImage.image_url
+                    imagePath = detailPath + self.getShortName(imageUrl)
+                    downloadImg(imageUrl, imagePath)
+
+            db.update('product', "mark = '" + self.mark+"' and product_code = '" + str(productInfo.product_code) + "'", {'image_saved': '1'})
+            print('保存图片成功：' + productInfo.product_code)
+        except Exception as ex:
+            print('保存商品图片失败' + str(ex))
             endTime = time.time()
             span = endTime - start
             save_status = '2'
             if span > 5:
                 save_status = '3'
-
-            db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': save_status})
-            print('保存图片失败,' + '耗时' + str(int(span)) + 's， 已标记为' + save_status + ' ' + productInfo['code'])
+            db.update('product', "mark = '" + self.mark + "' and product_code = '" + str(productInfo.product_code) + "'", {'image_saved': str(save_status)})
+            print('保存图片失败,' + '耗时' + str(int(span)) + 's， 已标记为' + save_status + ' ' + productInfo.product_code)
 
     #传入商品Url，保存商品图片
     def saveImageWithUrl(self, productUrl):
@@ -369,3 +351,13 @@ class MBase(object):
     def saveData(self, db, tableName, data):
         if len(data) > 0:
             db.insert(tableName, data)
+
+    #将DbObject的数组转换成可保存的数组
+    def createSaveObject(self, dbObjectList):
+        return [x.saveableObj() for x in dbObjectList if isinstance(x, DbObject)]
+
+    #获取文件短名称
+    def getShortName(self, fullPath):
+        shortName = fullPath[::-1]
+        shortName = shortName[:shortName.find('/')][::-1]
+        return shortName

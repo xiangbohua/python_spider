@@ -3,6 +3,7 @@
 import configparser
 import os
 
+import bs4
 from pip._vendor.pyparsing import basestring
 
 from m_base import MBase
@@ -36,8 +37,8 @@ class Grainer(MBase):
         productName = soup.find('div', id='product-intro').find('h1').string
         productCode = productId
 
-        price = soup.find('div', id='product-intro').find_all('strong', class_='p-price')
-        price = '~'.join([x.string[1:] for x in price])
+        priceTag = soup.find('div', id='product-intro').find_all('strong', class_='p-price')
+        price = '~'.join([x.string[1:] for x in priceTag])
         buyNo = ''
         model = '分SKU'
 
@@ -45,12 +46,14 @@ class Grainer(MBase):
         brandName = brandTag.find('div', class_='dd').a.string
         brandUrl = brandTag.find('div', class_='dd').a['href']
         brandImg = ''
-
+        unitName = ''
+        market_price = ''
 
         productDetailTag = soup.find(id='content_product')
 
-        description = productDetailTag.find('div', class_='property')
-        description = ''.join([prop for prop in description.contents if isinstance(prop, basestring)])
+        descriptionTag = productDetailTag.find('div', class_='property')
+
+        description = str(descriptionTag).replace('<br/>', '')
 
         specTag = soup.find('ul', class_='specifications').find_all('div')
         specInfo = []
@@ -98,6 +101,8 @@ class Grainer(MBase):
                              'brand_name':brandName,
                              'brand_img':brandImg,
                              'brand_url':brandUrl,
+                             'unit_name':unitName,
+                             'market_price':market_price,
                              'image_saved':'0',
                              'product_type':'SPU',
                              'category_name': categoryName,
@@ -105,7 +110,45 @@ class Grainer(MBase):
                              'main_img':mainImage,
                              'detail_img':imageInfo,
                              'specs':specInfo,
-                             'skus':skuTags,
+                             'skus':skuInfos,
                              'comments': []})
 
+
         return dbProduct
+
+    def getSkuOne(self, skuUrl):
+        soup = getHtmlAsSoup(skuUrl)
+        categoryPathTag = soup.find('div', class_='node_path').find_all('a')
+        categoryPath = ''
+        for cpt in categoryPathTag:
+            categoryPath += cpt.string.strip() + '>'
+        categoryPath = categoryPath[:-1]
+
+        productId = skuUrl.split('/')[-2:-1][0]
+        # 获取直属分类名称
+        categoryName = categoryPath.split('>')
+        categoryName = categoryName[-1:][0]
+        productName = soup.find('div', id='product-intro').find('h1').string
+        productCode = productId
+
+        productInrtoTag = soup.find('div', id='product-intro')
+        priceTag = productInrtoTag.find('span', class_='p-price')
+        price = priceTag.contents[0][1:]
+        unit_name = priceTag.contents[1].string[1:]
+
+        markedPriceTag = productInrtoTag.find('dd', class_='p-price-del')
+        markedPrice = priceTag.contents[0][1:]
+
+        mainInfoTags = productInrtoTag.find('div', class_='sku-main').find('div', class_='line').find_all('dl')
+
+        buyNo = mainInfoTags[2].find('span').string
+        model = mainInfoTags[4].find('dd').string
+
+
+        productDetailTag = soup.find(id='content_product')
+        descriptionTag = productDetailTag.find('div', class_='property')
+        description = str(descriptionTag).replace('<br/>', '')
+
+
+        print(description)
+

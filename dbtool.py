@@ -113,7 +113,6 @@ class MySQLCommand(object):
             setStatement += col + " = '" + str(val) + "',"
 
         sql = "UPDATE " + table + " SET " + setStatement[:-1] + " WHERE " + where
-
         try:
             self.cursor.execute(sql)
             if self.auto_commit == True:
