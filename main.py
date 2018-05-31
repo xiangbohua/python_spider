@@ -10,23 +10,16 @@ from m_grainger import Grainer
 from m_vipmro import VipMro
 from bs4 import BeautifulSoup
 from dbtool import MySQLCommand
+from product import Product
+from product_sku import ProductSku
 
 from tool import is_gz_file
 
 
-m = Grainer()
+g = Grainer()
 
-m.db.count('product')
 
-db = m.getDb()
-db.connect()
-print(db.count('product'))
-
-db.closeMysql()
-
-db.connect()
-print(db.count('product'))
-
+g.getProductOne('http://item.grainger.cn/g/00276086/')
 
 
 print('处理完成')

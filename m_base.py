@@ -8,6 +8,7 @@ import abc
 import time
 
 import tool
+from dbObject import DbObject
 from tool import downloadImg
 
 from dbtool import MySQLCommand
@@ -79,6 +80,10 @@ class MBase(object):
     def getCategoryPathList(self, categoryPathStr):
         raise Exception('方法必须实现')
 
+    def getOneSku(self, skuUrl):
+        return None
+
+    #保存所有分类
     def saveAllCategory(self):
         category1 = self.getCategory1()
         for cate1 in category1:
@@ -95,7 +100,7 @@ class MBase(object):
                     for cate4 in category4:
                         self.saveCategory(cate4)
 
-
+    #保存多有商品
     def saveAllProduct(self):
         categories = self.db.select("select id, categoru_url from category + where processed = 0 and level = 4 and mark = '" + self.mark + "'")
 
@@ -127,12 +132,27 @@ class MBase(object):
                     try:
                         productInfo = self.getOneProduct(fullUrl)
                         self.saveProduct(productInfo, False)
+
                     except:
                         self.db.insert('error_product', {'type': '保存商品', 'error_url': fullUrl})
                 else:
                     print('已经存在无需保存:' + urls)
 
+    #保存单个商品的所有SKU信息，要求商品信息已经保存
+    def saveProductSku(self, productInfo):
+        if productInfo.skus != None and len(productInfo.skus):
+            for sku in productInfo.skus:
+                fullUrl = self.getFullUrl(sku.model_url)
+                skuInfo = self.getOneSku(fullUrl)
+                if skuInfo != None:
+                    try:
+                        self.saveProduct(skuInfo, True)
+                        self.db.update('product_sku', "where product_code = '" + productInfo.product_code + "' and model_url = '" +sku.model_url + "'", {'info_saved': '1'})
+                    except:
+                        print('商品SKU保存失败' + sku.model_url)
 
+
+    #保存分类信息
     def saveCategory(self, categoryInfo, db = None):
         categoryInfo.append('mark', self.mark)
 
@@ -147,47 +167,48 @@ class MBase(object):
         else:
             print('分类已存在' + categoryInfo['c_url'])
 
+    #保存单个商品基础信息
     def saveProduct(self, productInfo, checkExisted = True):
-        raiseIf(not isinstance(productInfo, dict))
+        raiseIf(not isinstance(productInfo, DbObject))
+
         db = self.getDb()
         if checkExisted:
-            existed = self.checkProductWithCode(productInfo['code'])
-            if existed:
+            checkExited = self.checkProductWithCode(productInfo['code'])
+            if checkExited > 0:
                 print('已经存在无需保存:' + productInfo['code'])
                 return
 
-        productInfo.append('mark', self.mark)
         imageData = []
-        for img in productInfo['detail']:
-            imageData.append(
-                {'product_code': productInfo['code'], 'product_id': productInfo['id'], 'image_url': img, 'type': '1'})
+        for mimg in productInfo['main_img']:
+            if isinstance(mimg, DbObject):
+                imageData.append(mimg.saveableObj())
 
-        for img in productInfo['small_img']:
-            imageData.append(
-                {'product_code': productInfo['code'], 'product_id': productInfo['id'], 'image_url': img, 'type': '2'})
+        for dimg in productInfo['detail_img']:
+            if isinstance(dimg, DbObject):
+                imageData.append(dimg.saveableObj())
 
         specData = []
-        for spec in productInfo['spec']:
-            specData.append(
-                {'product_code': productInfo['code'], 'product_id': productInfo['id'], 'spec_name': spec['key'],
-                 'spec_value': spec['value']})
+        for specs in productInfo['specs']:
+            if isinstance(specs, DbObject):
+                specData.append(specs.saveableObj())
 
-        commentData = []
-        if 'comment' in productInfo.keys():
-            for com in productInfo['comment']:
-                commentData.append(
-                    {'product_code': productInfo['code'], 'product_id': productInfo['id'], 'mark': self.mark,
-                     'p_comment': com})
+        skuData = []
+        for skus in productInfo['skus']:
+            if isinstance(skus, DbObject):
+                skuData.append(skus.saveableObj())
+
+        commentsData = []
+        for comments in productInfo['comments']:
+            if isinstance(comments, DbObject):
+                commentsData.append(comments.saveableObj())
 
         db.begin()
         try:
-            db.insert('product', productInfo)
-            if len(imageData) > 0:
-                db.insert('product_images', imageData)
-            if len(specData) > 0:
-                db.insert('product_spec', specData)
-            if len(commentData) > 0:
-                db.insert('product_comment', commentData)
+            self.saveData(db, 'product', productInfo.saveableObj())
+            self.saveData(db, 'product_images', imageData)
+            self.saveData(db, 'product_spec', specData)
+            self.saveData(db, 'product_sku', skuData)
+            self.saveData(db, 'product_comment', commentsData)
 
             db.commit()
             print('成功保存数据:' + productInfo['code'])
@@ -196,6 +217,7 @@ class MBase(object):
             print('插入数据失败，已回滚')
             raise
 
+    #加载配置文件
     def __loadConfig(self, fileName = 'conf.ini'):
         self.conf = configparser.ConfigParser()
         if not os.path.exists(fileName):
@@ -203,13 +225,14 @@ class MBase(object):
         self.conf.read(fileName)
 
 
+    #准备相关信息
     def __prepareAll(self):
         self.url = self.getRootUrl()
         self.mark = self.getMark()
 
         self.__prepareBasePath()
 
-
+    #检查相关信息，失败时报错
     def __checkAll(self):
         raiseIf(self.mark == None)
         raiseIf(self.url == None)
@@ -217,12 +240,14 @@ class MBase(object):
         raiseIf(self.base_path == None)
         raiseIf(not os.path.exists(self.base_path))
 
+    #获取配置属性
     def getConfig(self, key):
         con = self.conf.get('config', key)
         if con == '' or con == None:
             raise ValueError('配置未找到' + str(key))
         return con
 
+    #保存文件存储基础目录
     def __prepareBasePath(self):
         basePath = self.getConfig('db_image_path')
 
@@ -232,9 +257,11 @@ class MBase(object):
         mkDir(basePath)
         mkDir(self.base_path)
 
+    #加载主界面
     def loadMainPage(self):
         self.mainPage = tool.getHtmlAsSoup(self.url)
 
+    #获取新的数据库访问对象
     def getDb(self):
         host = self.getConfig('db_host')
         port = int(self.getConfig('db_port'))
@@ -248,18 +275,22 @@ class MBase(object):
     #定义属性
     db = property(fget=getDb, fset=None, doc='获取数据库对象')
 
+    #根据商品Url检查商品是否存在
     def checkProductWithUrl(self, url):
         count = self.db.count('product', 'product_url = ' + url + " and mark = '" + self.mark + "'")
         return count > 0
 
+    #传入商品编码检查商品是否存在
     def checkProductWithCode(self, code):
         count = self.db.count('product', 'product_code = ' + code + " and mark = '" + self.mark + "'")
         return count > 0
 
+    #传入分类Url检测分类是否存在
     def checkCategoryWithUrl(self, categoryUrl):
         count = self.db.count('category', 'c_url = ' + categoryUrl + " and mark = '" + self.mark + "'")
         return count > 0
 
+    #根据从页面获取的商品信息保存其图片
     def saveImageWithInfo(self, productInfo, db = None):
         if db == None:
             db = self.getDb()
@@ -302,6 +333,7 @@ class MBase(object):
             db.update('product', ' product_code = ' + str(productInfo['code']), {'image_saved': save_status})
             print('保存图片失败,' + '耗时' + str(int(span)) + 's， 已标记为' + save_status + ' ' + productInfo['code'])
 
+    #传入商品Url，保存商品图片
     def saveImageWithUrl(self, productUrl):
         product = self.getOneProduct(productUrl)
         self.saveImageWithInfo(product)
@@ -333,4 +365,7 @@ class MBase(object):
     def getFullUrl(self, sortUrl):
         return self.url + sortUrl
 
-
+    #保存DbObject格式的对象到数据库
+    def saveData(self, db, tableName, data):
+        if len(data) > 0:
+            db.insert(tableName, data)
