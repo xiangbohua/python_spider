@@ -39,7 +39,7 @@ class Grainer(MBase):
         price = soup.find('div', id='product-intro').find_all('strong', class_='p-price')
         price = '~'.join([x.string[1:] for x in price])
         buyNo = ''
-        model = '多种'
+        model = '分SKU'
 
         brandTag = soup.find(id='summary-brand')
         brandName = brandTag.find('div', class_='dd').a.string
@@ -86,22 +86,21 @@ class Grainer(MBase):
             dbProductSku = ProductSku({'product_code':productCode,'product_id':productId,'product_model':skuModel, 'model_url':skuUrl,'info_saved': '0'})
             skuInfos.append(dbProductSku)
 
-
-
         dbProduct = Product({'category_path':categoryPath,
                              'product_id':productId,
                              'product_code':productCode,
                              'product_url': url,
                              'product_name':productName,
                              'price':price,
-                             'model':'分SKU',
+                             'model':model,
                              'description':description,
-                             'buy_code':'',
+                             'buy_code':buyNo,
                              'brand_name':brandName,
-                             'brand_img':'',
+                             'brand_img':brandImg,
                              'brand_url':brandUrl,
                              'image_saved':'0',
                              'product_type':'SPU',
+                             'category_name': categoryName,
 
                              'main_img':mainImage,
                              'detail_img':imageInfo,

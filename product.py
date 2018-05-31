@@ -7,7 +7,7 @@ from tool import raiseIf
 
 class Product(DbObject):
     def getFields(self):
-        return ['category_path','product_id','product_code','product_url','product_name','price','model','buy_code','brand_name','brand_img','brand_url','image_saved']
+        return ['category_path','product_id','product_code','product_url','product_name','price','model','buy_code','brand_name','brand_img', 'category_name','brand_url','image_saved']
 
     def getRuntimeProp(self):
         return [
