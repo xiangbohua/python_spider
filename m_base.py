@@ -147,9 +147,9 @@ class MBase(object):
             self.saveProductSku(productInfo)
         except Exception as ex:
             print('保存商品信息失败')
-            existed = self.db.count('error_product', "mark = '" +self.mark +"' and error_url = '" + url +"'")
+            existed = self.db.count('error_product', "mark = '" +self.mark +"' and error_url = '" + productInfo.product_url +"'")
             if existed  == 0:
-                self.db.insert('error_product', {'mark': self.mark, 'type': '保存商品', 'error_url': url})
+                self.db.insert('error_product', {'mark': self.mark, 'type': '保存商品', 'error_url': productInfo.product_url})
 
     #保存单个商品的所有SKU信息，要求商品信息已经保存
     def saveProductSku(self, productInfo):
@@ -198,11 +198,11 @@ class MBase(object):
                 print('已经存在无需保存:' + productInfo.product_code)
                 return
 
-        imageData = self.createSaveObject(productInfo.main_img + productInfo.detail_img)
-
         def setMark(x):
             x.mark = self.mark
             return x
+
+        imageData = self.createSaveObject(map(setMark,productInfo.main_img + productInfo.detail_img))
 
         db.begin()
         try:
@@ -302,11 +302,12 @@ class MBase(object):
 
         start = time.time()
         try:
-            nextUrl = self.createImagePathTree(productInfo.category_path)
-            mkDir(nextUrl + productInfo.product_code)
+            nextUrl = self.createImagePathTree(productInfo.category_path) + productInfo.product_code
+
+            mkDir(nextUrl)
 
             if len(productInfo.main_img) > 0:
-                mainPath = nextUrl + productInfo.product_code + '/主图/'
+                mainPath = nextUrl + '/主图/'
                 mkDir(mainPath)
                 for dbImage in productInfo.main_img:
                     imageUrl = dbImage.image_url
@@ -314,7 +315,7 @@ class MBase(object):
                     downloadImg(imageUrl, imagePath)
 
             if len(productInfo.detail_img) > 0:
-                detailPath = nextUrl + productInfo.product_code + '/详情图/'
+                detailPath = nextUrl + '/详情图/'
                 mkDir(detailPath)
                 for dbImage in productInfo.main_img:
                     imageUrl = dbImage.image_url
@@ -340,8 +341,8 @@ class MBase(object):
 
     #按商品分类保存
     def createImagePathTree(self, categoryPath):
-        raiseIf(not isinstance(categoryPath, list))
         nextUrl = self.base_path
+        categoryPath = categoryPath.split('>')[:-1]
         for pathName in categoryPath:
             nextUrl += pathName.replace('/', '\\') + '/'
             mkDir(nextUrl)
@@ -385,7 +386,6 @@ class MBase(object):
         for urlDb in errorProductUrls:
             id = urlDb[0]
             url = urlDb[1]
-            updateStatus = 0
             try:
                 self.saveProductAllInfo(url)
                 updateStatus = 1
@@ -417,20 +417,22 @@ class MBase(object):
             id = urlDb[0]
             productCode = urlDb[1]
             categoryPath = urlDb[2]
-            savePath = self.createImagePathTree(categoryPath)
+            savePath = self.createImagePathTree(categoryPath) + productCode
+            mkDir(savePath)
+
             try:
-                productImages = self.db.select("select image_url,type from product_image where mark = '" + self.mark + "' and product_code = '" +productCode + "'")
+                productImages = self.db.select("select image_url,type from product_images where mark = '" + self.mark + "' and product_code = '" +productCode + "'")
                 for dbImageUrl in productImages:
                     imageUrl = dbImageUrl[0]
                     type = dbImageUrl[1]
                     if type == 2:
-                        mainPath = savePath + productCode + '/主图/'
+                        mainPath = savePath + '/主图/'
                         mkDir(mainPath)
                         imagePath = mainPath + self.getShortName(imageUrl)
                         downloadImg(imageUrl, imagePath)
 
                     if type == 1:
-                        detailPath = savePath + productCode + '/详情图/'
+                        detailPath = savePath + '/详情图/'
                         mkDir(detailPath)
                         imagePath = detailPath + self.getShortName(imageUrl)
                         downloadImg(imageUrl, imagePath)

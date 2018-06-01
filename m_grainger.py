@@ -32,7 +32,7 @@ class Grainger(MBase):
         productName = soup.find('div', id='product-intro').find('h1').string
         productCode = productId
 
-        categoryPathTag = soup.find('div', class_='node_path').find_all('a')
+        categoryPathTag = soup.find('div', class_='node_path').find_all('a')[1:]
         categoryPath = ''
         for cpt in categoryPathTag:
             categoryPath += cpt.string.strip() + '>'
@@ -157,8 +157,9 @@ class Grainger(MBase):
         soup = getHtmlAsSoup(skuUrl)
         categoryPathTag = soup.find('div', class_='node_path').find_all('a')
         categoryPath = ''
-        for cpt in categoryPathTag:
+        for cpt in categoryPathTag[1:]:
             categoryPath += cpt.string.strip() + '>'
+
         categoryPath = categoryPath[:-1]
 
         productId = skuUrl.split('/')[-2:-1][0]

@@ -7,7 +7,7 @@ from tool import raiseIf
 
 class ProductImage(DbObject):
     def getFields(self):
-        return ['product_code','product_id','image_url','local_path','type',]
+        return ['mark','product_code','product_id','image_url','local_path','type',]
 
     def getRuntimeProp(self):
         return []
