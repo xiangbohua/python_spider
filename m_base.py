@@ -110,7 +110,7 @@ class MBase(object):
             cateUrl = cate[1]
 
             try:
-                self.saveOneCategoryProducts(cateUrl);
+                self.saveCategoryAllProducts(cateUrl);
 
                 self.db.update('category', "id = " + str(id), {'processed': 1})
             except:
@@ -118,7 +118,7 @@ class MBase(object):
 
 
     #获取当前所有分类商品
-    def saveOneCategoryProducts(self, listUrl):
+    def saveCategoryAllProducts(self, listUrl):
         nextUrl = listUrl
         while nextUrl != None:
             productList = self.getProductList(nextUrl)
@@ -129,16 +129,27 @@ class MBase(object):
                 fullUrl = shortUrl
                 checkExited = self.checkProductWithUrl(fullUrl)
                 if not checkExited:
-                    try:
-                        productInfo = self.getProductOne(fullUrl)
-                        self.saveProduct(productInfo, False)
-                        self.saveImageWithInfo(productInfo)
-                        self.saveProductSku(productInfo)
-                    except:
-                        raise
-                        self.db.insert('error_product', {'type': '保存商品', 'error_url': fullUrl})
+                    productInfo = self.getProductOne(fullUrl)
+                    self.saveProductAllInfo(productInfo)
                 else:
                     print('已经存在无需保存:' + fullUrl)
+
+        #重新尝试保存失败的SPU
+        self.redoErrorProduct()
+        #重新尝试保存保存信息失败的SKU
+        self.redoErrorSaveSku()
+
+    #保存商品所有的信息
+    def saveProductAllInfo(self, productInfo):
+        try:
+            self.saveProduct(productInfo, False)
+            self.saveImageWithInfo(productInfo)
+            self.saveProductSku(productInfo)
+        except Exception as ex:
+            print('保存商品信息失败')
+            existed = self.db.count('error_product', "mark = '" +self.mark +"' and error_url = '" + url +"'")
+            if existed  == 0:
+                self.db.insert('error_product', {'mark': self.mark, 'type': '保存商品', 'error_url': url})
 
     #保存单个商品的所有SKU信息，要求商品信息已经保存
     def saveProductSku(self, productInfo):
@@ -149,6 +160,7 @@ class MBase(object):
                 skuInfo = self.getSkuOne(fullUrl)
                 if skuInfo != None:
                     try:
+                        print(skuInfo.saveableObj())
                         self.saveProduct(skuInfo, True)
 
                         self.saveImageWithInfo(skuInfo)
@@ -188,12 +200,16 @@ class MBase(object):
 
         imageData = self.createSaveObject(productInfo.main_img + productInfo.detail_img)
 
+        def setMark(x):
+            x.mark = self.mark
+            return x
+
         db.begin()
         try:
             self.saveData(db, 'product', productInfo.saveableObj())
             self.saveData(db, 'product_images', imageData)
             self.saveData(db, 'product_spec', self.createSaveObject(productInfo.specs))
-            self.saveData(db, 'product_sku', self.createSaveObject(productInfo.skus))
+            self.saveData(db, 'product_sku', self.createSaveObject(map(setMark, productInfo.skus)))
             self.saveData(db, 'product_comment', self.createSaveObject(productInfo.comments))
 
             db.commit()
@@ -286,13 +302,7 @@ class MBase(object):
 
         start = time.time()
         try:
-            categoryPath = productInfo.category_path.split('>')
-            categoryPath = categoryPath[1:len(categoryPath) - 1]
-            nextUrl = self.base_path
-            for pathName in categoryPath:
-                nextUrl += pathName.replace('/', '\\') + '/'
-                mkDir(nextUrl)
-
+            nextUrl = self.createImagePathTree(productInfo.category_path)
             mkDir(nextUrl + productInfo.product_code)
 
             if len(productInfo.main_img) > 0:
@@ -369,3 +379,67 @@ class MBase(object):
         shortName = fullPath[::-1]
         shortName = shortName[:shortName.find('/')][::-1]
         return shortName
+
+    def redoErrorProduct(self):
+        errorProductUrls =  self.db.select("select id,error_url from error_product where type = '保存商品' and redo=0 and mark = '" + self.mark +"'" )
+        for urlDb in errorProductUrls:
+            id = urlDb[0]
+            url = urlDb[1]
+            updateStatus = 0
+            try:
+                self.saveProductAllInfo(url)
+                updateStatus = 1
+            except Exception as ex:
+                print('重试保存商品再次失败' + str(ex) + ":" + url)
+                updateStatus = 2
+
+            self.db.update('error_product', "id = " + str(id), {'redo':str(updateStatus)})
+
+
+    def redoErrorSaveSku(self):
+        errorSku = self.db.select("select id,model_url from product_sku where info_saved =0 and mark = '" + self.mark +"'" )
+        for urlDb in errorSku:
+            id = urlDb[0]
+            url = urlDb[1]
+            try:
+                skuInfo = self.getSkuOne(url)
+                self.saveProductAllInfo(skuInfo)
+                updateStatus = 1
+            except Exception as ex:
+                print('重试保存SKU再次失败' + str(ex) + ":" + url)
+                updateStatus = 2
+
+            self.db.update('product_sku', "id = " + str(id), {'info_saved':str(updateStatus)})
+
+    def redoErrorSaveImage(self):
+        errorProduct = self.db.select("select id,product_code, category_path from product where image_saved =0 and mark = '" + self.mark + "'")
+        for urlDb in errorProduct:
+            id = urlDb[0]
+            productCode = urlDb[1]
+            categoryPath = urlDb[2]
+            savePath = self.createImagePathTree(categoryPath)
+            try:
+                productImages = self.db.select("select image_url,type from product_image where mark = '" + self.mark + "' and product_code = '" +productCode + "'")
+                for dbImageUrl in productImages:
+                    imageUrl = dbImageUrl[0]
+                    type = dbImageUrl[1]
+                    if type == 2:
+                        mainPath = savePath + productCode + '/主图/'
+                        mkDir(mainPath)
+                        imagePath = mainPath + self.getShortName(imageUrl)
+                        downloadImg(imageUrl, imagePath)
+
+                    if type == 1:
+                        detailPath = savePath + productCode + '/详情图/'
+                        mkDir(detailPath)
+                        imagePath = detailPath + self.getShortName(imageUrl)
+                        downloadImg(imageUrl, imagePath)
+
+
+                self.db.update('product',"mark = '" + self.mark + "' and product_code = '" + str(productCode) + "'", {'image_saved': '1'})
+                updateStatus = 1
+            except Exception as ex:
+                print('重试保存SKU再次失败' + str(ex) + ":" + productCode)
+                updateStatus = 2
+
+            self.db.update('product_sku', "id = " + str(id), {'info_saved': str(updateStatus)})

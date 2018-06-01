@@ -7,7 +7,7 @@ from tool import raiseIf
 
 class ProductSku(DbObject):
     def getFields(self):
-        return ['product_code','product_id','product_model','model_url','remark','can_replace', ['info_saved','0']]
+        return ['mark','product_code','product_id','product_model','model_url','remark','can_replace', ['info_saved','0']]
 
     def getRuntimeProp(self):
         return []

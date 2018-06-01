@@ -15,9 +15,9 @@ from product_sprc import ProductSpec
 from tool import mkDir, raiseIf
 from tool import getHtmlAsSoup
 
-class Grainer(MBase):
+class Grainger(MBase):
     def getMark(self):
-        return 'grainer'
+        return 'grainger'
 
     def getRootUrl(self):
         return 'https://www.grainger.cn/'
@@ -154,7 +154,6 @@ class Grainer(MBase):
     def getSkuOne(self, skuUrl):
         raiseIf(skuUrl.replace('item.grainger.cn', '').find('u') <= 0, '传入的URL不属于SKU')
 
-        print(skuUrl)
         soup = getHtmlAsSoup(skuUrl)
         categoryPathTag = soup.find('div', class_='node_path').find_all('a')
         categoryPath = ''
