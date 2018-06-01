@@ -1,28 +1,13 @@
 #!/usr/local/bin/python3
 # -*- conding: utf8 -*-
 import m_base
+from m_grainger import Grainger
 
-
-class Base(object):
-    name = ''
-
-    def __init__(self):
-        self.name = self.getName()
-
-
-    def getName(self):
-        return 'B'
-
-    def eat(self):
-        print(self.name +': eat')
+g = Grainger()
 
 
 
-
-class A(Base):
-    def getName(self):
-        return 'A'
+g.saveCategoryAllProducts('http://item.grainger.cn/s/c-203905/')
 
 
-
-
+print('处理完成')
