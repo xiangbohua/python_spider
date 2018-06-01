@@ -160,7 +160,6 @@ class MBase(object):
                 skuInfo = self.getSkuOne(fullUrl)
                 if skuInfo != None:
                     try:
-                        print(skuInfo.saveableObj())
                         self.saveProduct(skuInfo, True)
 
                         self.saveImageWithInfo(skuInfo)
