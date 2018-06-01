@@ -19,13 +19,14 @@ from tool import is_gz_file
 g = Grainer()
 
 
-pro = g.getSkuOne('http://item.grainger.cn/u/00091261/')
+#pro = g.getSkuOne('http://item.grainger.cn/u/00186391/')
 
-exit()
+#exit()
 
-pro = g.getProductOne('http://item.grainger.cn/g/00276086/')
+pro = g.getProductOne('http://item.grainger.cn/g/00275917/')
 
 g.saveProduct(pro)
+g.saveProductSku(pro)
 
 print('处理完成')
 

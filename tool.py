@@ -51,6 +51,6 @@ def is_gz_file(filepath):
         return binascii.hexlify(test_f.read(2)) == b'1f8b'
 
 
-def raiseIf(checkCandition):
+def raiseIf(checkCandition, msg = '逻辑校验失败'):
     if checkCandition:
-        raise LogicException('逻辑校验失败')
+        raise LogicException(msg)

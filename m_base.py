@@ -44,6 +44,10 @@ class MBase(object):
     def getRootUrl(self):
         raise Exception('方法必须实现')
 
+    #返回商品SKU是否需要添加前缀
+    def needPadPrefixForItem(self):
+        return False
+
     @abc.abstractmethod
     def getMark(self):
         raise Exception('方法必须实现')
@@ -143,11 +147,12 @@ class MBase(object):
         if productInfo.skus != None and len(productInfo.skus):
             for sku in productInfo.skus:
                 fullUrl = self.getFullUrl(sku.model_url)
-                skuInfo = self.getOneSku(fullUrl)
+
+                skuInfo = self.getSkuOne(fullUrl)
                 if skuInfo != None:
                     try:
                         self.saveProduct(skuInfo, True)
-                        self.db.update('product_sku', "where product_code = '" + productInfo.product_code + "' and model_url = '" +sku.model_url + "'", {'info_saved': '1'})
+                        self.db.update('product_sku', "product_code = '" + productInfo.product_code + "' and model_url = '" +sku.model_url + "'", {'info_saved': '1'})
                     except Exception as e:
                         print('商品SKU保存失败:' + sku.model_url + ":" + str(e))
                 else:
@@ -195,6 +200,7 @@ class MBase(object):
             db.rollback()
             print('保存商品数据失败，已回滚')
             raise
+
 
     #加载配置文件
     def __loadConfig(self, fileName = 'conf.ini'):
@@ -344,8 +350,10 @@ class MBase(object):
         shortName = shortName[:shortName.find('/')][::-1]
         return shortName
 
-    def getFullUrl(self, sortUrl):
-        return self.url + sortUrl
+    def getFullUrl(self, shortUrl):
+        if self.needPadPrefixForItem():
+            return self.url + shortUrl
+        return shortUrl
 
     #保存DbObject格式的对象到数据库
     def saveData(self, db, tableName, data):
