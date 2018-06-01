@@ -1,0 +1,6 @@
+delete from product;
+delete from product_images;
+delete from product_sku;
+delete from product_spec;
+
+delete from error_product;

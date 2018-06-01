@@ -44,16 +44,12 @@ class MBase(object):
     def getRootUrl(self):
         raise Exception('方法必须实现')
 
-    #返回商品SKU是否需要添加前缀
-    def needPadPrefixForItem(self):
-        return False
-
     @abc.abstractmethod
     def getMark(self):
         raise Exception('方法必须实现')
 
     @abc.abstractmethod
-    def getOneProduct(self, url):
+    def getProductOne(self, url):
         raise Exception('方法必须实现')
 
     @abc.abstractmethod
@@ -128,31 +124,37 @@ class MBase(object):
             productList = self.getProductList(nextUrl)
             nextUrl = productList['next']
             urls = productList['urls']
-
             for shortUrl in urls:
-                fullUrl = self.getFullUrl(shortUrl)
-                checkExited = self.checkProductWithCode(productInfo['code'])
+                #默认获取完成Url
+                fullUrl = shortUrl
+                checkExited = self.checkProductWithUrl(fullUrl)
                 if not checkExited:
                     try:
-                        productInfo = self.getOneProduct(fullUrl)
+                        productInfo = self.getProductOne(fullUrl)
                         self.saveProduct(productInfo, False)
-
+                        self.saveImageWithInfo(productInfo)
+                        self.saveProductSku(productInfo)
                     except:
+                        raise
                         self.db.insert('error_product', {'type': '保存商品', 'error_url': fullUrl})
                 else:
-                    print('已经存在无需保存:' + urls)
+                    print('已经存在无需保存:' + fullUrl)
 
     #保存单个商品的所有SKU信息，要求商品信息已经保存
     def saveProductSku(self, productInfo):
         if productInfo.skus != None and len(productInfo.skus):
             for sku in productInfo.skus:
-                fullUrl = self.getFullUrl(sku.model_url)
+                fullUrl = sku.model_url
 
                 skuInfo = self.getSkuOne(fullUrl)
                 if skuInfo != None:
                     try:
                         self.saveProduct(skuInfo, True)
+
+                        self.saveImageWithInfo(skuInfo)
+                        print('保存SKU成功，SPU编码：'+ productInfo.product_code + " SKU编码:" + skuInfo.product_code)
                         self.db.update('product_sku', "product_code = '" + productInfo.product_code + "' and model_url = '" +sku.model_url + "'", {'info_saved': '1'})
+
                     except Exception as e:
                         print('商品SKU保存失败:' + sku.model_url + ":" + str(e))
                 else:
@@ -262,17 +264,17 @@ class MBase(object):
 
     #根据商品Url检查商品是否存在
     def checkProductWithUrl(self, url):
-        count = self.db.count('product', 'product_url = ' + url + " and mark = '" + self.mark + "'")
+        count = self.db.count('product', "product_url = '" + url + "' and mark = '" + self.mark + "'")
         return count > 0
 
     #传入商品编码检查商品是否存在
     def checkProductWithCode(self, code):
-        count = self.db.count('product', 'product_code = ' + code + " and mark = '" + self.mark + "'")
+        count = self.db.count('product', "product_code = '" + code + "' and mark = '" + self.mark + "'")
         return count > 0
 
     #传入分类Url检测分类是否存在
     def checkCategoryWithUrl(self, categoryUrl):
-        count = self.db.count('category', 'c_url = ' + categoryUrl + " and mark = '" + self.mark + "'")
+        count = self.db.count('category', "c_url = '" + categoryUrl + "' and mark = '" + self.mark + "'")
         return count > 0
 
     #根据从页面获取的商品信息保存其图片
@@ -323,7 +325,7 @@ class MBase(object):
 
     #传入商品Url，保存商品图片
     def saveImageWithUrl(self, productUrl):
-        product = self.getOneProduct(productUrl)
+        product = self.getProductOne(productUrl)
         self.saveImageWithInfo(product)
 
     #按商品分类保存
@@ -351,9 +353,7 @@ class MBase(object):
         return shortName
 
     def getFullUrl(self, shortUrl):
-        if self.needPadPrefixForItem():
-            return self.url + shortUrl
-        return shortUrl
+        return self.url + shortUrl
 
     #保存DbObject格式的对象到数据库
     def saveData(self, db, tableName, data):
