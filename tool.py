@@ -26,7 +26,6 @@ def mkDir(fullPath):
 def downloadImg(imageUrl, savePath):
     from urllib.request import urlretrieve
     #文件不存在时访问图片下载
-    print(savePath)
     if not os.path.exists(savePath):
         urlretrieve(imageUrl, savePath)
         #当文件是GZIP文件时才尝试解压
