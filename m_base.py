@@ -133,6 +133,7 @@ class MBase(object):
                     self.saveProductAllInfo(productInfo)
                 else:
                     print('已经存在无需保存:' + fullUrl)
+            self.db.insert('processed_page', {'mark':self.mark, 'page_url':nextUrl})
 
         #重新尝试保存失败的SPU
         self.redoErrorProduct()

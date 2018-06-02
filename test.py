@@ -3,11 +3,17 @@
 import m_base
 from m_grainger import Grainger
 
-g = Grainger()
+grainger = Grainger()
 
 
+lastPage = grainger.db.select("select page_url from  processed_page where mark = '" + grainger.mark + "' order by id desc limit 1")
 
-g.saveCategoryAllProducts('http://item.grainger.cn/s/c-203905/')
+startUrl = 'http://item.grainger.cn/s/'
+if len(lastPage) > 0:
+    startUrl = lastPage[0][0]
 
 
-print('处理完成')
+grainger.saveCategoryAllProducts(startUrl)
+
+print(startUrl)
+exit(1)
