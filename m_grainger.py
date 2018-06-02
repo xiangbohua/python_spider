@@ -119,7 +119,6 @@ class Grainger(MBase):
 
                 alternativeProductUrl = ''
                 alternativeTag = skuTr.find('td', class_='alternative')
-                print(alternativeTag)
                 if alternativeTag != None and alternativeTag.a != None:
                     alternativeProductUrl = alternativeTag.a['href'][2:]
 
