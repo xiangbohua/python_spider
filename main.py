@@ -39,6 +39,6 @@ pro = g.redoErrorSaveImage()
 #g.saveImageWithInfo(pro)
 # g.saveProductSku(pro)
 
-print('处理完成')
+print('Main.py 处理完成')
 
 
