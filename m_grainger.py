@@ -62,7 +62,8 @@ class Grainger(MBase):
 
             if mainInfo.find('div').string == '品　　牌：':
                 brandName = mainInfo.find('a').string
-                brandUrl = "http://item.grainger.cn/" + mainInfo.find('a')['href'][1:]
+                if hasattr(mainInfo.find('a'), 'href'):
+                    brandUrl = "http://item.grainger.cn/" + mainInfo.find('a')['href'][1:]
 
 
         productDetailTag = soup.find(id='content_product')
