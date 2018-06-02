@@ -119,7 +119,7 @@ class Grainger(MBase):
 
                 alternativeProductUrl = ''
                 alternativeTag = skuTr.find('td', class_='alternative')
-                if alternativeTag != None:
+                if alternativeTag != None and hasattr(alternativeTag, 'herf'):
                     alternativeProductUrl = alternativeTag.a['href'][2:]
 
                 dbProductSku = ProductSku({'product_code':productCode,'product_id':productId,'product_model':skuModel, 'model_url':skuUrl,'remark': stopSale, 'can_replace':alternativeProductUrl,'info_saved': '0'})
