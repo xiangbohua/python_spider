@@ -132,8 +132,9 @@ class MBase(object):
                     try:
                         productInfo = self.getProductOne(fullUrl)
                     except Exception as ex:
+                        raise ex
                         print('获取商品信息失败')
-                        existed = self.db.count('error_product',"mark = '" + self.mark + "' and error_url = '" + productInfo.product_url + "'")
+                        existed = self.db.count('error_product',"mark = '" + self.mark + "' and error_url = '" + fullUrl + "'")
                         if existed == 0:
                             self.db.insert('error_product',{'mark': self.mark, 'type': '保存商品', 'error_url': productInfo.product_url})
                         continue
