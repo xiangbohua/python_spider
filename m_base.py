@@ -83,6 +83,10 @@ class MBase(object):
     def getSkuOne(self, skuUrl):
         return None
 
+    #开始压缩文件时开始的目录
+    def zipStartWith(self):
+        return ''
+
     #保存所有分类
     def saveAllCategory(self):
         category1 = self.getCategory1()

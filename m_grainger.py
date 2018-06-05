@@ -280,3 +280,5 @@ class Grainger(MBase):
         return {'urls': urls, 'next': nextPage}
 
 
+    def zipStartWith(self):
+        return ''

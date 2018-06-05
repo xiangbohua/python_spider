@@ -7,6 +7,7 @@ import pymysql
 import os
 import gzip
 import binascii
+import zipfile
 
 from my_exceptions import LogicException
 
@@ -52,3 +53,30 @@ def is_gz_file(filepath):
 def raiseIf(checkCandition, msg = '逻辑校验失败'):
     if checkCandition:
         raise LogicException(msg)
+
+
+
+
+def zip_dir(file_path,zfile_path):
+    '''
+    function:压缩
+    params:
+        file_path:要压缩的件路径,可以是文件夹
+        zfile_path:解压缩路径
+    description:可以在python2执行
+    '''
+    filelist = []
+    if os.path.isfile(file_path):
+        filelist.append(file_path)
+    else :
+        for root, dirs, files in os.walk(file_path):
+            for name in files:
+                filelist.append(os.path.join(root, name))
+                print('joined:',os.path.join(root, name),dirs)
+
+    zf = zipfile.ZipFile(zfile_path, "w", zipfile.zlib.DEFLATED)
+    for tar in filelist:
+        arcname = tar[len(file_path):]
+        print(arcname,tar)
+        zf.write(tar,arcname)
+    zf.close()
