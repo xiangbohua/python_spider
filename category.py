@@ -2,8 +2,6 @@
 # -*- conding: utf8 -*-
 
 from dbObject import DbObject
-from tool import raiseIf
-
 
 class Category(DbObject):
     def getFields(self):
